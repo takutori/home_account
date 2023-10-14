@@ -3,8 +3,8 @@ from flask import Flask, render_template, request
 from datetime import datetime
 
 from handle_spreadsheet import BuyControlSheet, BuyDataSheet, IncomeControlSheet, IncomeDataSheet
-from calc_kpi import CalcKPI
-from plotting import MonthBuyPlot
+from calc_kpi import CalcMonthKPI, CalcYearKPI
+from plotting import MonthBuyPlot, YearIncomePlot
 
 import pdb
 
@@ -17,9 +17,9 @@ def get_ctg():
     buy_ctg = buy_ctl_sheet.get_ctg_dict()
     ctg_dict["buy_ctg"] = buy_ctg
     # 収入カテゴリ
-    imcome_ctl_sheet = IncomeControlSheet()
-    imcome_ctg = imcome_ctl_sheet.get_income_dict()
-    ctg_dict["income_ctg"] = imcome_ctg
+    income_ctl_sheet = IncomeControlSheet()
+    income_ctg = income_ctl_sheet.get_income_ctg()
+    ctg_dict["income_ctg"] = {i : income_ctg[i] for i in range(len(income_ctg))}
 
     return ctg_dict
 
@@ -52,7 +52,7 @@ def post():
 @app.route("/move_month_report_page", methods=["GET", "POST"])
 def move_html_month_report():
     # 各KPIの取得
-    calc_kpi = CalcKPI()
+    calc_kpi = CalcMonthKPI()
     kpi_dict = {
         "residual_income" : calc_kpi.calc_residual_income() / 1000,
         "amount" : calc_kpi.calc_amount() / 1000,
@@ -78,6 +78,28 @@ def move_html_month_report():
     report_name_dict["month_amount_by_date"] = month_amount_by_date_report_name
 
     return render_template("month_report.html", report_name_dict=report_name_dict, kpi_dict=kpi_dict)
+
+
+### year report page ################################################################
+@app.route("/move_year_report_page", methods=["GET", "POST"])
+def move_html_year_report():
+    # 各KPIの取得
+    calc_kpi = CalcYearKPI()
+    kpi_dict = {
+        "income" : calc_kpi.calc_income() / 1000,
+        "residual_income" : calc_kpi.calc_residual_income() / 1000,
+        "pred_income" : calc_kpi.calc_pred_income() / 1000
+    }
+
+    report_name_dict = {}
+    # 年収グラフ
+    year_income_plot = YearIncomePlot()
+    year_income_by_month_report_name = year_income_plot.year_income_by_month()
+    report_name_dict["year_income_by_month"] = year_income_by_month_report_name
+
+    return render_template("year_report.html", report_name_dict=report_name_dict, kpi_dict=kpi_dict)
+
+
 
 ### registration_buy page ################################################################
 
@@ -135,7 +157,7 @@ def input_income():
 
     income_data_sheet = IncomeDataSheet()
     for i in range(3):
-        # 購入日の取得
+        # 受取日の取得
         income_year = request.form.get("income_year_" + str(i))
         income_month = request.form.get("income_month_" + str(i))
         income_day = request.form.get("income_day_" + str(i))
@@ -143,11 +165,12 @@ def input_income():
 
         # カテゴリーと金額をindex.htmlから取得
         income_ctg = request.form.get('income_ctg_' + str(i))
+        income_type = request.form.get("income_type_" + str(i))
         income = request.form.get('income_' + str(i))
         residual_income = request.form.get("residual_income_" + str(i))
         if (income_ctg != None) & (income != "") & (residual_income != ""):
             # スプレッドシートに書き込み
-            income_data_sheet.input_income(income_date, income_ctg, int(income), int(residual_income))
+            income_data_sheet.input_income(income_date, income_ctg, income_type, int(income), int(residual_income))
 
     ctg_dict = get_ctg()
 

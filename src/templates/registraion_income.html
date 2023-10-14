@@ -15,6 +15,7 @@
                             <li><a href="/move_registration_buy_page">収支登録</a></li>
                             <li class="active"><a href="/move_registration_income_page">収入登録</a></li>
                             <li><a href="/move_month_report_page">月間レポート</a></li>
+                            <li><a href="/move_year_report_page">年間レポート</a></li>
                         </ul>
                     </div>
                 </div>
@@ -73,6 +74,15 @@
                                         <option value={{ ctg_dict["income_ctg"][i] }}>{{ ctg_dict["income_ctg"][i] }}</option>
                                         {% endfor %}
                                     </select>
+
+                                    <label for="fname">給与タイプ</label>
+                                    <select name="income_type_{{ i }}">
+                                        <option value="null" disabled selected></option>
+                                        <option value="月給">月給</option>
+                                        <option value="ボーナス">ボーナス</option>
+                                        <option value="臨時">臨時</option>
+                                    </select>
+
                                     <label for="fname">額面</label>
                                     <input type="number" name="income_{{ i }}">
                                     <label for="fname">手取り</label>

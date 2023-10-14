@@ -2,38 +2,7 @@ import gspread
 from google.oauth2.service_account import Credentials
 
 import pandas as pd
-from datetime import datetime
 import pdb
-
-
-class ThisMonth:
-    def __init__(self):
-
-        self.date_format = '%Y-%m-%d'
-        # 現在の日時
-        self.now_date = datetime.now()
-        # 今月のKPI対象日時
-        if self.now_date.day <= 24:
-            start_date = self.now_date.replace(month = self.now_date.month-1, day=25)
-            finish_date = self.now_date.replace(day=25)
-        else:
-            start_date.now_date = self.now_date.replace(day=25)
-            finish_date.now_date = self.now_date.replace(month=self.now_date.month+1, day=25)
-        start_date = datetime(year=start_date.year, month=start_date.month, day=start_date.day, hour=0, minute=0, second=0, microsecond=0)
-        finish_date = datetime(year=finish_date.year, month=finish_date.month, day=finish_date.day, hour=0, minute=0, second=0, microsecond=0)
-        self.date_interval = [start_date, finish_date]
-
-    def get_date_format(self):
-        return self.date_format
-
-    def get_now_date(self):
-        return self.now_date
-
-    def get_date_interval(self):
-        return self.date_interval
-
-    def get_days_left(self):
-        return (self.date_interval[1] - self.now_date).days
 
 
 class HandleSpreadsheet:
@@ -150,17 +119,27 @@ class IncomeControlSheet(HandleSpreadsheet):
 
         return data
 
-    def get_income_dict(self):
+    def get_income_ctg(self):
         data = self.get_income_ctl_data()
         ctg_list = data["収入カテゴリー"].tolist()[0:-1]
-        # data -> dict
-        ctg_dict = {} # key : 0 value : 収入源
-        index = 0
-        for ctg in ctg_list:
-            ctg_dict[index] = ctg
-            index+=1
 
-        return ctg_dict
+        return ctg_list
+
+    def get_income_pay_day(self):
+        data = self.get_income_ctl_data()
+        ctg_list = data["収入カテゴリー"].tolist()[0:-1]
+        payday_list = data["給料日"].tolist()[0:-1]
+        payday_dict = {ctg : payday for ctg, payday in zip(ctg_list, payday_list)}
+
+        return payday_dict
+
+    def get_income_bonus_month(self):
+        data = self.get_income_ctl_data()
+        ctg_list = data["収入カテゴリー"].tolist()[0:-1]
+        bonus_month_list = data["ボーナス月"].tolist()[0:-1]
+        bonus_dict = {ctg : bonus_month for ctg, bonus_month in zip(ctg_list, bonus_month_list)}
+
+        return bonus_dict
 
 
 class IncomeDataSheet(HandleSpreadsheet):
@@ -173,9 +152,9 @@ class IncomeDataSheet(HandleSpreadsheet):
         self.workbook = self._connect_spreadsheet()
         self.sheet = self.workbook.worksheet(self.sheet_name)
 
-    def input_income(self, date, ctg, income, residual_income):
+    def input_income(self, date, ctg, income_type, income, residual_income):
         # make inserted data
-        insert_data = [date, ctg, income, residual_income]
+        insert_data = [date, ctg, income_type, income, residual_income]
         # insert data
         index = len(self.sheet.get_all_values())
         self.sheet.insert_row(insert_data, index + 1)

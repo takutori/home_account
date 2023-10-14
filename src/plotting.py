@@ -3,11 +3,13 @@ import pandas as pd
 import pdb
 
 import datetime
+from dateutil.relativedelta import relativedelta
 
 import plotly.graph_objects as go
 
-from handle_spreadsheet import BuyControlSheet, BuyDataSheet, ThisMonth
-from calc_kpi import CalcKPI
+from handle_spreadsheet import BuyControlSheet, BuyDataSheet, IncomeControlSheet, IncomeDataSheet
+from handle_time import ThisMonth, ThisYear
+from calc_kpi import CalcMonthKPI
 
 
 class MonthBuyPlot:
@@ -189,12 +191,101 @@ class MonthBuyPlot:
 
         fig = go.Figure(data=plots, layout=layout)
 
-        calc_kpi = CalcKPI()
+        calc_kpi = CalcMonthKPI()
         residual_income = calc_kpi.calc_residual_income()
         fig.add_hline(residual_income, line_color="crimson")
 
         report_name = "{}.html".format(self.interval_name)
         save_path_filename = "src/templates/reports/month_amount_by_date/"+report_name
+        fig.write_html(save_path_filename)
+
+        return report_name
+
+
+class YearIncomePlot:
+    def __init__(self):
+        # 今月の日時情報を取得
+        this_year = ThisYear()
+        self.now_date = this_year.get_now_date()
+        self.date_format = this_year.get_date_format()
+        self.date_interval = this_year.get_date_interval()
+        # 今月を除く残りの月
+        self.month_left = this_year.get_month_left()
+        # 期間の名前
+        self.interval_name = self.date_interval[0].strftime(self.date_format) + "_" + self.date_interval[1].strftime(self.date_format)
+
+        # 収入データ
+        income_data_sheet = IncomeDataSheet()
+        self.all_income_df = income_data_sheet.get_income_df()
+        # 日付をdatetime型へ
+        self.all_income_df["time"] = pd.to_datetime(self.all_income_df["time"])
+        # income, residual_incomeを数値データへ
+        self.all_income_df["income"] = self.all_income_df["income"].astype(int)
+        self.all_income_df["residual_income"] = self.all_income_df["residual_income"].astype(int)
+        # 今年のデータのみにする
+        self.income_df = self.all_income_df.loc[
+            (self.date_interval[0] <= self.all_income_df["time"]) &
+            (self.all_income_df["time"] < self.date_interval[1])
+        ]
+
+        # 収入カテゴリを取得
+        income_ctl_sheet = IncomeControlSheet()
+        self.income_ctg = income_ctl_sheet.get_income_ctg()
+        # その他カテゴリを定義
+        self.payday_dict = income_ctl_sheet.get_income_pay_day()
+        self.permanent_income_ctg = [ctg for ctg in self.payday_dict if self.payday_dict[ctg] != "臨時"] # 恒久的に給与が与えられる会社
+        self.bonus_type_dict = income_ctl_sheet.get_income_bonus_month()
+        self.bonus_income_ctg = [ctg for ctg in self.bonus_type_dict if self.bonus_type_dict[ctg] != "なし"] # ボーナスのある会社
+
+
+    def year_income_by_month(self):
+
+        month_list = []
+        month_income_dict = {ctg : [] for ctg in self.income_ctg}
+        for plus_month in range(12):
+            # 月の収入データを取得
+            this_month_first = self.date_interval[0] + relativedelta(months=plus_month)
+            next_month_first = self.date_interval[0] + relativedelta(months=plus_month+1)
+
+            this_month_income_df = self.income_df.loc[
+                (this_month_first <= self.income_df["time"]) &
+                (self.income_df["time"] < next_month_first)
+            ]
+
+            # 月の収入を、会社毎に足し算
+            for ctg in self.income_ctg:
+                this_month_ctg_income_df = this_month_income_df.loc[this_month_income_df["category"] == ctg]
+                if len(this_month_ctg_income_df) != 0:
+                    month_income_dict[ctg].append(np.sum(this_month_ctg_income_df["income"]))
+                else:
+                    month_income_dict[ctg].append(np.nan)
+
+            # 月を文字にして、month_listに追加しておく
+            if str(this_month_first.month) == 1:
+                xlabel = str(this_month_first.year) + "-" + "0" + str(this_month_first.month)
+            else:
+                xlabel = str(this_month_first.year) + "-" + str(this_month_first.month)
+            month_list.append(xlabel)
+
+        plots = []
+        for ctg in self.income_ctg:
+            plot = go.Bar(
+                x = month_list,
+                y = month_income_dict[ctg],
+                name = ctg,
+            )
+            plots.append(plot)
+
+        layout = go.Layout(
+            title=dict(text="今年の月毎の給与　\n期間：" + self.interval_name),
+            hovermode="x",
+            barmode='stack'
+            )
+
+        fig = go.Figure(data=plots, layout=layout)
+
+        report_name = "{}.html".format(self.interval_name)
+        save_path_filename = "src/templates/reports/year_income_by_month/"+report_name
         fig.write_html(save_path_filename)
 
         return report_name
