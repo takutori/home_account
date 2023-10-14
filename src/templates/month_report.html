@@ -16,6 +16,7 @@
 							<li><a href="/move_registration_buy_page">支出登録</a></li>
 							<li><a href="/move_registration_income_page">収入登録</a></li>
 							<li class="active"><a href="/move_month_report_page">月間レポート</a></li>
+							<li><a href="/move_year_report_page">年間レポート</a></li>
 						</ul>
 					</div>
 				</div>
@@ -164,6 +165,25 @@
 
 	</div>
 
+	<div id="fh5co-blog" class="fh5co-bg-section">
+		<div class="container">
+			<div class="row animate-box row-pb-md" data-animate-effect="fadeInUp">
+				<div class="col-md-8 col-md-offset-2 text-center fh5co-heading">
+					<span>月間レポート</span>
+					<h2>今月の日別累積支出</h2>
+					<p>赤線を越えてたら、もうおわおわり</p>
+				</div>
+			</div>
+			<div class="row row-pb-md">
+				<div class="col-md-12 text-center animate-box" data-animate-effect="fadeInUp">
+					<div class="fh5co-heading">
+						{% include "reports/month_amount_by_date/%s" % report_name_dict["month_amount_by_date"]  %}
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
     <div id="fh5co-services" class="fh5co-bg-section">
 		<div class="container">
 			<div class="row row-pb-md">
@@ -179,25 +199,6 @@
 				<div class="col-md-12 text-center animate-box" data-animate-effect="fadeInUp">
 					<div class="fh5co-heading">
 						{% include "reports/month_amount_by_ctg/%s" % report_name_dict["month_amount_by_ctg"]  %}
-					</div>
-				</div>
-			</div>
-		</div>
-	</div>
-
-	<div id="fh5co-blog" class="fh5co-bg-section">
-		<div class="container">
-			<div class="row animate-box row-pb-md" data-animate-effect="fadeInUp">
-				<div class="col-md-8 col-md-offset-2 text-center fh5co-heading">
-					<span>月間レポート</span>
-					<h2>今月の日別累積支出</h2>
-					<p>赤線を越えてたら、もうおわおわり</p>
-				</div>
-			</div>
-			<div class="row row-pb-md">
-				<div class="col-md-12 text-center animate-box" data-animate-effect="fadeInUp">
-					<div class="fh5co-heading">
-						{% include "reports/month_amount_by_date/%s" % report_name_dict["month_amount_by_date"]  %}
 					</div>
 				</div>
 			</div>
