@@ -68,10 +68,14 @@ def move_html_month_report():
     }
 
     report_name_dict = {}
-    # 支出レポートを作成
+    # カテゴリ別支出レポートを作成
     month_buy_plot = MonthBuyPlot()
     month_amount_by_ctg_report_name = month_buy_plot.month_amount_by_ctg()
     report_name_dict["month_amount_by_ctg"] = month_amount_by_ctg_report_name
+
+    # 日別購入レポートを作成
+    month_amount_by_date_report_name = month_buy_plot.month_amount_by_date()
+    report_name_dict["month_amount_by_date"] = month_amount_by_date_report_name
 
     return render_template("month_report.html", report_name_dict=report_name_dict, kpi_dict=kpi_dict)
 

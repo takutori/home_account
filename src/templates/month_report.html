@@ -185,4 +185,23 @@
 		</div>
 	</div>
 
+	<div id="fh5co-blog" class="fh5co-bg-section">
+		<div class="container">
+			<div class="row animate-box row-pb-md" data-animate-effect="fadeInUp">
+				<div class="col-md-8 col-md-offset-2 text-center fh5co-heading">
+					<span>月間レポート</span>
+					<h2>今月の日別累積支出</h2>
+					<p>赤線を越えてたら、もうおわおわり</p>
+				</div>
+			</div>
+			<div class="row row-pb-md">
+				<div class="col-md-12 text-center animate-box" data-animate-effect="fadeInUp">
+					<div class="fh5co-heading">
+						{% include "reports/month_amount_by_date/%s" % report_name_dict["month_amount_by_date"]  %}
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
 {% endblock %}

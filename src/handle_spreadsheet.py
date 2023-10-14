@@ -2,8 +2,39 @@ import gspread
 from google.oauth2.service_account import Credentials
 
 import pandas as pd
-import datetime
+from datetime import datetime
 import pdb
+
+
+class ThisMonth:
+    def __init__(self):
+
+        self.date_format = '%Y-%m-%d'
+        # 現在の日時
+        self.now_date = datetime.now()
+        # 今月のKPI対象日時
+        if self.now_date.day <= 24:
+            start_date = self.now_date.replace(month = self.now_date.month-1, day=25)
+            finish_date = self.now_date.replace(day=25)
+        else:
+            start_date.now_date = self.now_date.replace(day=25)
+            finish_date.now_date = self.now_date.replace(month=self.now_date.month+1, day=25)
+        start_date = datetime(year=start_date.year, month=start_date.month, day=start_date.day, hour=0, minute=0, second=0, microsecond=0)
+        finish_date = datetime(year=finish_date.year, month=finish_date.month, day=finish_date.day, hour=0, minute=0, second=0, microsecond=0)
+        self.date_interval = [start_date, finish_date]
+
+    def get_date_format(self):
+        return self.date_format
+
+    def get_now_date(self):
+        return self.now_date
+
+    def get_date_interval(self):
+        return self.date_interval
+
+    def get_days_left(self):
+        return (self.date_interval[1] - self.now_date).days
+
 
 class HandleSpreadsheet:
     def __init__(self):
@@ -37,6 +68,15 @@ class BuyControlSheet(HandleSpreadsheet):
         self.sheet = self.workbook.worksheet(self.sheet_name)
 
     def get_buy_ctl_data(self, col_range="ctg"):
+        """
+        col_range="ctg" -> カテゴリだけを取得
+        col_range="ctl" -> 予算までを取得
+
+        Returns
+        -------
+        _type_
+            _description_
+        """
         if col_range == "ctg":
             col_range_index = [0, 1, 2]
         elif col_range == "ctl":
