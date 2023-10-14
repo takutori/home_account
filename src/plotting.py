@@ -165,8 +165,12 @@ class MonthBuyPlot:
 
     def month_amount_by_date(self):
         buy_history = self.buy_df.sort_values(by="time").groupby("time").sum()["amount"]
-        # 最終日を追加して、グラフが最終日まで表示されるようにする
+        # 最初日、最終日を追加して、グラフが最終日まで表示されるようにする
+        if buy_history.index.min() != self.date_interval[0]: # 既に初日に購入履歴があれば、0を追加しなくてい
+            buy_history.loc[self.date_interval[0]] = 0
         buy_history.loc[self.date_interval[1]] = np.nan
+        # 改めて日付順に並び替える
+        buy_history = buy_history.sort_index()
         # 累積和を計算
         buy_sum_history = buy_history.cumsum()
 
