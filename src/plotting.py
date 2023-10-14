@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 import pdb
 
@@ -5,40 +6,45 @@ import datetime
 
 import plotly.graph_objects as go
 
-from handle_spreadsheet import BuyControlSheet, BuyDataSheet
+from handle_spreadsheet import BuyControlSheet, BuyDataSheet, ThisMonth
 from calc_kpi import CalcKPI
 
 
 class MonthBuyPlot:
     def __init__(self):
+
+        # 今月のデータ(25日~24日)のみ所得 ########################################################################
+        # 今月の日時情報を取得
+        this_month = ThisMonth()
+        self.date_format = this_month.get_date_format()
+        self.now_date = this_month.get_now_date()
+        self.date_interval = this_month.get_date_interval()
+        # 期間の名前
+        self.interval_name = self.date_interval[0].strftime(self.date_format) + "_" + self.date_interval[1].strftime(self.date_format)
+        # 残り日数
+        self.days_left = this_month.get_days_left()
+
+        # 今月のデータだけに変更
         # 支出カテゴリーの取得
         buy_ctl_sheet = BuyControlSheet()
         self.buy_ctg = buy_ctl_sheet.get_ctg_dict()
         # 支出データの所得
         buy_data_sheet = BuyDataSheet()
-        self.buy_data = buy_data_sheet.get_buy_df()
+        self.buy_df = buy_data_sheet.get_buy_df()
+        self.buy_df["time"] = pd.to_datetime(self.buy_df["time"])
+        self.buy_df = self.buy_df.loc[
+            (self.date_interval[0] < self.buy_df["time"]) &
+            (self.buy_df["time"] < self.date_interval[1])
+        ]
+        # 支出データの金額を整数型へ変換
+        self.buy_df["amount"] = self.buy_df["amount"].astype(int)
         # 予算データの取得
         self.buy_ctl_data = buy_ctl_sheet.get_buy_ctl_data(col_range="ctl")
-
-        # 今月のデータ(25日~24日)のみ所得 ########################################################################
-        calc_kpi = CalcKPI()
-        self.date_format = calc_kpi.date_format
-        # 現在の日時
-        self.now_date = calc_kpi.now_date
-        # 今月の対象日時
-        self.date_interval = calc_kpi.date_interval
 
     def month_amount_by_ctg(self):
         """
         カテゴリー毎の支出グラフ
         """
-        time = self.now_date
-        start_time = self.date_interval[0]
-        finish_time = self.date_interval[1]
-        days_left = (finish_time - time).days # 残り日数
-        ## 対象データの取得
-        self.buy_data["date_time_ymd"] = pd.to_datetime(self.buy_data["time"].str.split(" ", expand=True)[0])
-        this_month_data = self.buy_data[(start_time <= self.buy_data["date_time_ymd"]) & (self.buy_data["date_time_ymd"] < finish_time)]
         # plot type
         ## カテゴリー1の項目リスト作成
         ctg1_list = []
@@ -68,7 +74,7 @@ class MonthBuyPlot:
             amount_hoverlist = []
             limit_hoverlist = []
             for ctg in ctg_list:
-                ctg_data = this_month_data[this_month_data["category" + str(ctg_level)] == ctg]
+                ctg_data = self.buy_df[self.buy_df["category" + str(ctg_level)] == ctg]
                 amount = ctg_data["amount"].astype(int).sum()
                 amount_list.append(amount)
                 limit_data = self.buy_ctl_data[self.buy_ctl_data["カテゴリー" + str(ctg_level)] == ctg]
@@ -127,7 +133,7 @@ class MonthBuyPlot:
             ctg_name = list(plot_ctg_type.keys())[ctg_type_index]
             sum_amount = sum(plot_datas[ctg_name]["amount_data"])
             sum_limit = sum(plot_datas[ctg_name]["limit_data"])
-            button_title = "今月の支出レポート　\n期間：" + str(start_time).split(" ")[0].replace("-", "/") + "~" + str(finish_time).split(" ")[0].replace("-", "/") + "　\n残り日数：" + str(days_left) + "　\n予算合計：" + str(sum_limit) + "　\n出費合計" + str(sum_amount)
+            button_title = "今月の支出レポート　\n期間：" + self.interval_name + "　\n残り日数：" + str(self.days_left) + "　\n予算合計：" + str(sum_limit) + "　\n出費合計" + str(sum_amount)
             button = dict(
                 label = ctg_name, method="update",
                 args=[dict(visible=visible), dict(title=button_title)]
@@ -143,7 +149,7 @@ class MonthBuyPlot:
             ]
         ## レイアウトデータの作成
         layout = go.Layout(
-            title=dict(text="今月の支出レポート　\n期間：" + str(start_time).split(" ")[0].replace("-", "/") + "~" + str(finish_time).split(" ")[0].replace("-", "/") + "　\n残り日数：" + str(days_left)),
+            title=dict(text="今月のカテゴリ別支出　\n期間：" + self.interval_name + "　\n残り日数：" + str(self.days_left)),
             updatemenus=updatemenus,
             barmode="overlay",
             hovermode="x"
@@ -151,14 +157,43 @@ class MonthBuyPlot:
 
         ## figの作成
         fig = go.Figure(data=plots, layout=layout)
-        report_name = "{}.html".format(str(start_time).split(" ")[0] + "_" + str(finish_time).split(" ")[0])
+        report_name = "{}.html".format(self.interval_name)
         save_path_filename = "src/templates/reports/month_amount_by_ctg/"+report_name
         fig.write_html(save_path_filename)
 
         return report_name
 
     def month_amount_by_date(self):
-        raise NotImplementedError
+        buy_history = self.buy_df.sort_values(by="time").groupby("time").sum()["amount"]
+        # 最終日を追加して、グラフが最終日まで表示されるようにする
+        buy_history.loc[self.date_interval[1]] = np.nan
+        # 累積和を計算
+        buy_sum_history = buy_history.cumsum()
+
+        plots = []
+        time_series_plot = go.Scatter(
+            x = buy_sum_history.index,
+            y = buy_sum_history,
+            marker_color = "lightslategray"
+        )
+        plots.append(time_series_plot)
+
+        layout = go.Layout(
+            title=dict(text="今月の日別の使用額　\n期間：" + self.interval_name + "　\n残り日数：" + str(self.days_left)),
+            hovermode="x"
+            )
+
+        fig = go.Figure(data=plots, layout=layout)
+
+        calc_kpi = CalcKPI()
+        residual_income = calc_kpi.calc_residual_income()
+        fig.add_hline(residual_income, line_color="crimson")
+
+        report_name = "{}.html".format(self.interval_name)
+        save_path_filename = "src/templates/reports/month_amount_by_date/"+report_name
+        fig.write_html(save_path_filename)
+
+        return report_name
 
 
 

@@ -3,27 +3,18 @@ import pandas as pd
 
 from datetime import datetime
 
-from handle_spreadsheet import BuyControlSheet, BuyDataSheet, IncomeControlSheet, IncomeDataSheet
+from handle_spreadsheet import BuyControlSheet, BuyDataSheet, IncomeControlSheet, IncomeDataSheet, ThisMonth
 
 import pdb
 
 class CalcKPI:
     def __init__(self):
         self.saving_amount = 110000 # 後で、ボーナス月にも対応した貯金額を取得できるようにする。
-
-        self.date_format = '%Y-%m-%d'
-        # 現在の日時
-        self.now_date = datetime.now()
-        # 今月のKPI対象日時
-        if self.now_date.day <= 24:
-            start_date = self.now_date.replace(month = self.now_date.month-1, day=25)
-            finish_date = self.now_date.replace(day=25)
-        else:
-            start_date.now_date = self.now_date.replace(day=25)
-            finish_date.now_date = self.now_date.replace(month=self.now_date.month+1, day=25)
-        start_date = datetime(year=start_date.year, month=start_date.month, day=start_date.day, hour=0, minute=0, second=0, microsecond=0)
-        finish_date = datetime(year=finish_date.year, month=finish_date.month, day=finish_date.day, hour=0, minute=0, second=0, microsecond=0)
-        self.date_interval = [start_date, finish_date]
+        # 今月の日時情報を取得
+        this_month = ThisMonth()
+        self.date_format = this_month.get_date_format()
+        self.now_date = this_month.get_now_date()
+        self.date_interval = this_month.get_date_interval()
 
         # 購入データ
         buy_data_sheet = BuyDataSheet()
@@ -79,7 +70,7 @@ class CalcKPI:
         # 食費が「家族費を除いた支出額」の何割かを計算
         male_cost = np.sum(self.buy_df.loc[self.buy_df["category1"] == "食費", "amount"])
         return male_cost / self.calc_amount_avoid_family()
-    
+
     def calc_extraordinary_cost(self):
         return np.sum(self.buy_df.loc[self.buy_df["category1"] == "臨時費", "amount"])
 
