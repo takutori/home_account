@@ -1,5 +1,6 @@
 *.csv
 keys/
 __pycache__
-.DS_Score
+.DS_Store
 src/templates/reports/*
+*.command
