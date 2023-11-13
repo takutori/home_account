@@ -36,7 +36,7 @@ class MonthBuyPlot:
         self.buy_df["time"] = pd.to_datetime(self.buy_df["time"])
         self.buy_df = self.buy_df.loc[
             (self.date_interval[0] < self.buy_df["time"]) &
-            (self.buy_df["time"] < self.date_interval[1])
+            (self.buy_df["time"] <= self.date_interval[1])
         ]
         # 支出データの金額を整数型へ変換
         self.buy_df["amount"] = self.buy_df["amount"].astype(int)
@@ -180,7 +180,8 @@ class MonthBuyPlot:
         time_series_plot = go.Scatter(
             x = buy_sum_history.index,
             y = buy_sum_history,
-            marker_color = "lightslategray"
+            marker_color = "lightslategray",
+            mode = "lines+markers"
         )
         plots.append(time_series_plot)
 
