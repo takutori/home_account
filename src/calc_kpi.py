@@ -23,7 +23,7 @@ class CalcMonthKPI:
         self.buy_df = buy_data_sheet.get_buy_df()
         self.buy_df["time"] = pd.to_datetime(self.buy_df["time"], format=self.date_format)
         self.buy_df = self.buy_df.loc[
-            (self.date_interval[0] <= self.buy_df["time"]) & (self.buy_df["time"] < self.date_interval[1])
+            (self.date_interval[0] < self.buy_df["time"]) & (self.buy_df["time"] <= self.date_interval[1])
             ]
         self.buy_df["amount"] = self.buy_df["amount"].astype(int)
 
