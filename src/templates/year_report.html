@@ -13,10 +13,21 @@
 					<div class="col-xs-12 text-center menu-1">
 						<ul>
 							<li><a href="./">ホーム</a></li>
-							<li><a href="/move_registration_buy_page">支出登録</a></li>
-							<li><a href="/move_registration_income_page">収入登録</a></li>
-							<li><a href="/move_month_report_page">月間レポート</a></li>
-							<li class="active"><a href="/move_year_report_page">年間レポート</a></li>
+							<li class="has-dropdown">
+								<a>登録</a>
+								<ul class="dropdown">
+									<li><a href="/move_registration_buy_page">支出登録</a></li>
+									<li><a href="/move_registration_income_page">収入登録</a></li>
+									<li><a 貯金登録 href="/move_registration_saving_page">貯金登録</a></li>
+								</ul>
+							</li>
+							<li class="has-dropdown">
+								<a>レポート</a>
+								<ul class="dropdown">
+									<li><a href="/move_month_report_page">月間レポート</a></li>
+									<li class="active"><a href="/move_year_report_page">年間レポート</a></li>
+								</ul>
+							</li>
 						</ul>
 					</div>
 				</div>

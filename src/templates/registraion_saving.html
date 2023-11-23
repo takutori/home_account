@@ -16,8 +16,8 @@
 								<a>登録</a>
 								<ul class="dropdown">
 									<li><a href="/move_registration_buy_page">支出登録</a></li>
-									<li class="active"><a href="/move_registration_income_page">収入登録</a></li>
-									<li><a 貯金登録 href="/move_registration_saving_page">貯金登録</a></li>
+									<li><a href="/move_registration_income_page">収入登録</a></li>
+									<li class="active"><a 貯金登録 href="/move_registration_saving_page">貯金登録</a></li>
 								</ul>
 							</li>
 							<li class="has-dropdown">
@@ -40,7 +40,7 @@
                     <div class="col-md-12 col-md-offset-0 text-center">
                         <div class="display-t">
                             <div class="display-tc animate-box" data-animate-effect="fadeInUp">
-                                <h1 class="mb30">収入登録</h1>
+                                <h1 class="mb30">貯金登録</h1>
                             </div>
                         </div>
                     </div>
@@ -56,48 +56,38 @@
 
 				</div>
 				<div class="col-md-12 animate-box">
-					<h3>収入登録</h3>
-					<form action="/input_income" method="POST" enctype="multipart/form-data">
-                        {% for i in range(3) %}
+					<h3>貯金登録</h3>
+					<form action="/input_saving" method="POST" enctype="multipart/form-data">
+                        {% for i in range(10) %}
 						<div class="row form-group">
 							<div class="col-md-12">
 
                                 <div class="date-picker" id="datePicker-{{ i }}">
-                                    <select name="income_year_{{ i }}" class="yearSelect" onchange="updateDays(this.parentElement.id)">
+                                    <select name="saving_year_{{ i }}" class="yearSelect" onchange="updateDays(this.parentElement.id)">
                                     </select>
                                     年
 
-                                    <select name="income_month_{{ i }}" class="monthSelect" onchange="updateDays(this.parentElement.id)">
+                                    <select name="saving_month_{{ i }}" class="monthSelect" onchange="updateDays(this.parentElement.id)">
                                         {% for month in range(1, 13, 1) %}
                                         <option value="{{ month }}">{{ month }}</option>
                                         {% endfor %}
                                     </select>
                                     月
 
-                                    <select name="income_day_{{ i }}" class="daySelect">
+                                    <select name="saving_day_{{ i }}" class="daySelect">
                                     </select>
                                     日
 
-                                    <label for="fname">収入源</label>
-                                    <select name="income_ctg_{{ i }}">
+                                    <label for="fname">貯金カテゴリー</label>
+                                    <select name="saving_ctg_{{ i }}">
                                         <option value="null" disabled selected></option>
-                                        {% for i in ctg_dict["income_ctg"] %}
-                                        <option value={{ ctg_dict["income_ctg"][i] }}>{{ ctg_dict["income_ctg"][i] }}</option>
+                                        {% for i in ctg_dict["saving_ctg"] %}
+                                        <option value={{ ctg_dict["saving_ctg"][i] }}>{{ ctg_dict["saving_ctg"][i] }}</option>
                                         {% endfor %}
                                     </select>
 
-                                    <label for="fname">給与タイプ</label>
-                                    <select name="income_type_{{ i }}">
-                                        <option value="null" disabled selected></option>
-                                        <option value="月給">月給</option>
-                                        <option value="ボーナス">ボーナス</option>
-                                        <option value="臨時">臨時</option>
-                                    </select>
-
-                                    <label for="fname">額面</label>
-                                    <input type="number" name="income_{{ i }}">
-                                    <label for="fname">手取り</label>
-                                    <input type="number" name="residual_income_{{ i }}">
+                                    <label for="fname">貯金額</label>
+                                    <input type="number" name="amount_{{ i }}">
                                 </div>
 							</div>
 						</div>
