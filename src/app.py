@@ -2,7 +2,7 @@ from flask import Flask, render_template, request
 
 from datetime import datetime
 
-from handle_spreadsheet import BuyControlSheet, BuyDataSheet, IncomeControlSheet, IncomeDataSheet
+from handle_spreadsheet import BuyControlSheet, BuyDataSheet, IncomeControlSheet, IncomeDataSheet, SavingControlSheet, SavingDataSheet
 from calc_kpi import CalcMonthKPI, CalcYearKPI
 from plotting import MonthBuyPlot, YearIncomePlot
 
@@ -20,6 +20,10 @@ def get_ctg():
     income_ctl_sheet = IncomeControlSheet()
     income_ctg = income_ctl_sheet.get_income_ctg()
     ctg_dict["income_ctg"] = {i : income_ctg[i] for i in range(len(income_ctg))}
+    # 貯金カテゴリ
+    saving_ctl_sheet = SavingControlSheet()
+    saving_ctg = saving_ctl_sheet.get_saving_ctg()
+    ctg_dict["saving_ctg"] = {i : saving_ctg[i] for i in range(len(saving_ctg))}
 
     return ctg_dict
 
@@ -175,6 +179,44 @@ def input_income():
     ctg_dict = get_ctg()
 
     return render_template('registraion_income.html', ctg_dict=ctg_dict)
+
+
+### registration_saving page ################################################################
+
+@app.route("/move_registration_saving_page", methods=["GET", "POST"])
+def move_html_registration_saving():
+    ctg_dict = get_ctg()
+
+    return render_template("registraion_saving.html", ctg_dict=ctg_dict)
+
+
+@app.route('/input_saving', methods=['GET', 'POST'])
+def input_saving():
+    """
+    収入を登録
+    """
+
+    saving_data_sheet = SavingDataSheet()
+    for i in range(10):
+        # 受取日の取得
+        saving_year = request.form.get("saving_year_" + str(i))
+        saving_month = request.form.get("saving_month_" + str(i))
+        saving_day = request.form.get("saving_day_" + str(i))
+        saving_date = transform_date_from_ymd(saving_year, saving_month, saving_day)
+
+        # カテゴリーと金額をindex.htmlから取得
+        saving_ctg = request.form.get('saving_ctg_' + str(i))
+        amount = request.form.get('amount_' + str(i))
+        if (saving_ctg != None) & (amount != None):
+            ctg = saving_ctg.split("-")[0]
+            how_to_save = saving_ctg.split("-")[1]
+            # スプレッドシートに書き込み
+            saving_data_sheet.input_saving(saving_date, ctg, how_to_save, int(amount))
+
+    ctg_dict = get_ctg()
+
+
+    return render_template('registraion_saving.html', ctg_dict=ctg_dict)
 
 
 if __name__ == "__main__":

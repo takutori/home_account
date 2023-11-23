@@ -168,7 +168,54 @@ class IncomeDataSheet(HandleSpreadsheet):
 
 
 
+### 貯金 ##################################################################
+class SavingControlSheet(HandleSpreadsheet):
+    """
+    貯金管理シートを扱う。支出のカテゴリーデータもここから。
+    """
+    def __init__(self):
+        super().__init__()
+        self.sheet_name = "貯金カテゴリー"
+        self.workbook = self._connect_spreadsheet()
+        self.sheet = self.workbook.worksheet(self.sheet_name)
 
+    def get_saving_ctl_data(self, col_range="ctg"):
+        data = pd.DataFrame(self.sheet.get_all_values())
+        # 列名を一行目の値に変更
+        data.columns = data.iloc[0]
+        data = data.drop(data.index[0])
+
+        return data
+
+    def get_saving_ctg(self):
+        data = self.get_saving_ctl_data()
+        ctg_list = (data["貯金項目"] + "-" + data["貯金方法"]).tolist()
+
+        return ctg_list
+
+
+class SavingDataSheet(HandleSpreadsheet):
+    """
+    貯金データシートを扱う
+    """
+    def __init__(self):
+        super().__init__()
+        self.sheet_name = "貯金データ"
+        self.workbook = self._connect_spreadsheet()
+        self.sheet = self.workbook.worksheet(self.sheet_name)
+
+    def input_saving(self, date, ctg, how_to_save, amount):
+        # make inserted data
+        insert_data = [date, ctg, how_to_save, amount]
+        # insert data
+        index = len(self.sheet.get_all_values())
+        self.sheet.insert_row(insert_data, index + 1)
+
+    def get_saving_df(self):
+        data = self.sheet.get_all_values()
+        columns = data.pop(0)
+
+        return pd.DataFrame(data, columns=columns)
 
 
 
