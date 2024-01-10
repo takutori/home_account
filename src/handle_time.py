@@ -27,11 +27,20 @@ class ThisMonth(ThisTime):
         super().__init__()
         # 今月のKPI対象日時
         if self.now_date.day <= 24:
-            start_date = self.now_date.replace(month = self.now_date.month-1, day=25)
+            if self.now_date.month - 1 <= 0:
+                start_date = self.now_date.replace(year=self.now_date.year - 1, month = 12, day=25)
+            else:
+                start_date = self.now_date.replace(month = self.now_date.month-1, day=25)
+
             finish_date = self.now_date.replace(day=25)
         else:
             start_date = self.now_date.replace(day=25)
-            finish_date = self.now_date.replace(month=self.now_date.month+1, day=25)
+
+            if self.now_date.month + 1 > 12:
+                finish_date = self.now_date.replace(year=self.now_date.year + 1, month=1, day=25)
+            else:
+                finish_date = self.now_date.replace(month=self.now_date.month+1, day=25)
+
         start_date = datetime(year=start_date.year, month=start_date.month, day=start_date.day, hour=0, minute=0, second=0, microsecond=0)
         finish_date = datetime(year=finish_date.year, month=finish_date.month, day=finish_date.day, hour=0, minute=0, second=0, microsecond=0)
         self.date_interval = [start_date, finish_date]

@@ -104,6 +104,25 @@ def move_html_year_report():
     return render_template("year_report.html", report_name_dict=report_name_dict, kpi_dict=kpi_dict)
 
 
+### saving report page ################################################################
+@app.route("/move_saving_report_page", methods=["GET", "POST"])
+def move_html_saving_report():
+    # 各KPIの取得
+    calc_kpi = CalcYearKPI()
+    kpi_dict = {
+        "income" : calc_kpi.calc_income() / 1000,
+        "residual_income" : calc_kpi.calc_residual_income() / 1000,
+        "pred_income" : calc_kpi.calc_pred_income() / 1000
+    }
+
+    report_name_dict = {}
+    # 年収グラフ
+    year_income_plot = YearIncomePlot()
+    year_income_by_month_report_name = year_income_plot.year_income_by_month()
+    report_name_dict["year_income_by_month"] = year_income_by_month_report_name
+
+    return render_template("year_report.html", report_name_dict=report_name_dict, kpi_dict=kpi_dict)
+
 
 ### registration_buy page ################################################################
 
