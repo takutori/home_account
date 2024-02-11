@@ -67,6 +67,26 @@
 						<span class="icon">
 							<i class="ti-download"></i>
 						</span>
+						<span class="counter"><span class="js-counter" data-from="0" data-to="{{ kpi_dict['income'] }}" data-speed="1500" data-refresh-interval="50">{{ kpi_dict['income'] }}</span>K+</span>
+						<span class="counter-label">手取り</span>
+
+					</div>
+				</div>
+				<div class="col-md-3 col-sm-6 animate-box" data-animate-effect="fadeInLeft">
+					<div class="feature-center">
+						<span class="icon">
+							<i class="ti-time"></i>
+						</span>
+						<span class="counter"><span class="js-counter" data-from="0" data-to="{{ kpi_dict['saving'] }}" data-speed="1500" data-refresh-interval="50">{{ kpi_dict['saving'] }}</span>K+</span>
+						<span class="counter-label">貯金額</span>
+
+					</div>
+				</div>
+				<div class="col-md-3 col-sm-6 animate-box" data-animate-effect="fadeInLeft">
+					<div class="feature-center">
+						<span class="icon">
+							<i class="ti-download"></i>
+						</span>
 						<span class="counter"><span class="js-counter" data-from="0" data-to="{{ kpi_dict['residual_income'] }}" data-speed="1500" data-refresh-interval="50">{{ kpi_dict['residual_income'] }}</span>K+</span>
 						<span class="counter-label">貯金額を除いた可処分所得</span>
 
@@ -117,17 +137,6 @@
 							</span>
 							<span class="counter"><span class="js-counter" data-from="0" data-to="{{ kpi_dict['variable_cost'] }}" data-speed="1500" data-refresh-interval="50">{{ kpi_dict['variable_cost'] }}</span>K+</span>
 							<span class="counter-label">変動費</span>
-
-						</div>
-					</div>
-
-					<div class="col-md-3 col-sm-6 animate-box" data-animate-effect="fadeInLeft">
-						<div class="feature-center">
-							<span class="icon">
-								<i class="ti-time"></i>
-							</span>
-							<span class="counter"><span class="js-counter" data-from="0" data-to="{{ kpi_dict['saving_amount'] }}" data-speed="1500" data-refresh-interval="50">{{ kpi_dict['saving_amount'] }}</span>K+</span>
-							<span class="counter-label">目標貯金額</span>
 
 						</div>
 					</div>
@@ -185,15 +194,10 @@
 					<p>赤線を越えてたら、もうおわおわり</p>
 				</div>
 			</div>
-			<div class="row row-pb-md">
-				<div class="col-md-12 text-center animate-box" data-animate-effect="fadeInUp">
-					<div class="fh5co-heading">
-						{% include "reports/month_amount_by_date/%s" % report_name_dict["month_amount_by_date"]  %}
-					</div>
-				</div>
-			</div>
 		</div>
 	</div>
+
+	{{ graph_dict["month_amount_by_date"] | safe}}
 
     <div id="fh5co-services" class="fh5co-bg-section">
 		<div class="container">
@@ -206,14 +210,9 @@
 					</div>
 				</div>
 			</div>
-            <div class="row row-pb-md">
-				<div class="col-md-12 text-center animate-box" data-animate-effect="fadeInUp">
-					<div class="fh5co-heading">
-						{% include "reports/month_amount_by_ctg/%s" % report_name_dict["month_amount_by_ctg"]  %}
-					</div>
-				</div>
-			</div>
 		</div>
 	</div>
+
+	{{ graph_dict["month_amount_by_ctg"] | safe}}
 
 {% endblock %}

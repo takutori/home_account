@@ -5,10 +5,13 @@ import pdb
 
 
 class ThisTime(metaclass=ABCMeta):
-    def __init__(self):
+    def __init__(self, now_date=None):
         self.date_format = '%Y-%m-%d'
-        # 現在の日時
-        self.now_date = datetime.now()
+        if now_date == None:
+            # 現在の日時
+            self.now_date = datetime.now()
+        else:
+            self.now_date = now_date
 
     def get_date_format(self):
         return self.date_format
@@ -23,8 +26,8 @@ class ThisTime(metaclass=ABCMeta):
 
 
 class ThisMonth(ThisTime):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, now_date=None):
+        super().__init__(now_date=now_date)
         # 今月のKPI対象日時
         if self.now_date.day <= 24:
             if self.now_date.month - 1 <= 0:
@@ -53,8 +56,8 @@ class ThisMonth(ThisTime):
 
 
 class ThisYear(ThisTime):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, now_date=None):
+        super().__init__(now_date=now_date)
         # 現在の日時
         self.now_date = datetime.now()
 

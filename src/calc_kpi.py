@@ -5,13 +5,12 @@ from datetime import datetime
 from dateutil.relativedelta import relativedelta
 
 
-from handle_spreadsheet import BuyControlSheet, BuyDataSheet, IncomeControlSheet, IncomeDataSheet
+from handle_spreadsheet import BuyControlSheet, BuyDataSheet, IncomeControlSheet, IncomeDataSheet, SavingControlSheet, SavingDataSheet
 from handle_time import ThisMonth, ThisYear
 import pdb
 
 class CalcMonthKPI:
     def __init__(self):
-        self.saving_amount = 110000 # 後で、ボーナス月にも対応した貯金額を取得できるようにする。
         # 今月の日時情報を取得
         this_month = ThisMonth()
         self.date_format = this_month.get_date_format()
@@ -37,9 +36,24 @@ class CalcMonthKPI:
         self.income_df["income"] = self.income_df["income"].astype(int)
         self.income_df["residual_income"] = self.income_df["residual_income"].astype(int)
 
+        # 貯金データ
+        saving_data_sheet = SavingDataSheet()
+        self.saving_df = saving_data_sheet.get_saving_df()
+        self.saving_df["time"] = pd.to_datetime(self.saving_df["time"], format=self.date_format)
+        self.saving_df = self.saving_df.loc[(self.date_interval[0] <= self.saving_df["time"]) & (self.saving_df["time"] < self.date_interval[1])]
+        self.saving_df["amount"] = self.saving_df["amount"].astype(int)
+
+    def calc_income(self):
+        # 手取りを計算
+        return np.sum(self.income_df["residual_income"])
+
+    def calc_saving(self):
+        # 貯金額を計算
+        return np.sum(self.saving_df["amount"])
+
     def calc_residual_income(self):
         # 貯金額を引いた可処分所得を計算
-        return np.sum(self.income_df["residual_income"]) - self.saving_amount
+        return self.calc_income() - self.calc_saving()
 
     def calc_amount(self):
         # 支出額の合計を計算
@@ -111,6 +125,12 @@ class CalcYearKPI:
         self.bonus_type_dict = income_ctl_sheet.get_income_bonus_month()
         self.bonus_income_ctg = [ctg for ctg in self.bonus_type_dict if self.bonus_type_dict[ctg] != "なし"] # ボーナスのある会社
 
+        # 貯金データ
+        saving_data_sheet = SavingDataSheet()
+        self.saving_df = saving_data_sheet.get_saving_df()
+        self.saving_df["time"] = pd.to_datetime(self.saving_df["time"], format=self.date_format)
+        self.saving_df = self.saving_df.loc[(self.date_interval[0] <= self.saving_df["time"]) & (self.saving_df["time"] < self.date_interval[1])]
+        self.saving_df["amount"] = self.saving_df["amount"].astype(int)
 
     def calc_income(self):
         return np.sum(self.income_df["income"])
@@ -161,6 +181,10 @@ class CalcYearKPI:
                     pred += most_recent_1year_bonus_mean
 
         return pred
+
+    def calc_saving(self):
+        # 貯金額を計算
+        return np.sum(self.saving_df["amount"])
 
 
 def get_this_month_payday(payday, this_year, this_month):
