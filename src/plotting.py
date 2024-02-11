@@ -2,12 +2,15 @@ import numpy as np
 import pandas as pd
 import pdb
 
+import json
 import datetime
 from dateutil.relativedelta import relativedelta
 
+import plotly
 import plotly.graph_objects as go
+import plotly.io as pio
 
-from handle_spreadsheet import BuyControlSheet, BuyDataSheet, IncomeControlSheet, IncomeDataSheet
+from handle_spreadsheet import BuyControlSheet, BuyDataSheet, IncomeControlSheet, IncomeDataSheet, SavingControlSheet, SavingDataSheet
 from handle_time import ThisMonth, ThisYear
 from calc_kpi import CalcMonthKPI
 
@@ -26,7 +29,6 @@ class MonthBuyPlot:
         # 残り日数
         self.days_left = this_month.get_days_left()
 
-        # 今月のデータだけに変更
         # 支出カテゴリーの取得
         buy_ctl_sheet = BuyControlSheet()
         self.buy_ctg = buy_ctl_sheet.get_ctg_dict()
@@ -34,6 +36,7 @@ class MonthBuyPlot:
         buy_data_sheet = BuyDataSheet()
         self.buy_df = buy_data_sheet.get_buy_df()
         self.buy_df["time"] = pd.to_datetime(self.buy_df["time"])
+        # 今月のデータだけに変更
         self.buy_df = self.buy_df.loc[
             (self.date_interval[0] < self.buy_df["time"]) &
             (self.buy_df["time"] <= self.date_interval[1])
@@ -135,7 +138,7 @@ class MonthBuyPlot:
             ctg_name = list(plot_ctg_type.keys())[ctg_type_index]
             sum_amount = sum(plot_datas[ctg_name]["amount_data"])
             sum_limit = sum(plot_datas[ctg_name]["limit_data"])
-            button_title = "今月の支出レポート　\n期間：" + self.interval_name + "　\n残り日数：" + str(self.days_left) + "　\n予算合計：" + str(sum_limit) + "　\n出費合計" + str(sum_amount)
+            button_title = "今月の支出レポート \n期間:" + self.interval_name + " \n残り日数:" + str(self.days_left) + " \n予算合計:" + str(sum_limit) + " \n出費合計" + str(sum_amount) + " 残金:" + str(sum_limit - sum_amount)
             button = dict(
                 label = ctg_name, method="update",
                 args=[dict(visible=visible), dict(title=button_title)]
@@ -159,11 +162,8 @@ class MonthBuyPlot:
 
         ## figの作成
         fig = go.Figure(data=plots, layout=layout)
-        report_name = "{}.html".format(self.interval_name)
-        save_path_filename = "src/templates/reports/month_amount_by_ctg/"+report_name
-        fig.write_html(save_path_filename)
 
-        return report_name
+        return pio.to_html(fig, full_html=False)
 
     def month_amount_by_date(self):
         buy_history = self.buy_df.sort_values(by="time").groupby("time").sum()["amount"]
@@ -196,11 +196,7 @@ class MonthBuyPlot:
         residual_income = calc_kpi.calc_residual_income()
         fig.add_hline(residual_income, line_color="crimson")
 
-        report_name = "{}.html".format(self.interval_name)
-        save_path_filename = "src/templates/reports/month_amount_by_date/"+report_name
-        fig.write_html(save_path_filename)
-
-        return report_name
+        return pio.to_html(fig, full_html=False)
 
 
 class YearIncomePlot:
@@ -215,7 +211,25 @@ class YearIncomePlot:
         # 期間の名前
         self.interval_name = self.date_interval[0].strftime(self.date_format) + "_" + self.date_interval[1].strftime(self.date_format)
 
-        # 収入データ
+        # 支出カテゴリーの取得 #########################################################################
+        buy_ctl_sheet = BuyControlSheet()
+        self.buy_ctg = buy_ctl_sheet.get_ctg_dict()
+        # 支出データの所得
+        buy_data_sheet = BuyDataSheet()
+        self.buy_df = buy_data_sheet.get_buy_df()
+        self.buy_df["time"] = pd.to_datetime(self.buy_df["time"])
+        # 今年のデータだけに変更
+        self.buy_df = self.buy_df.loc[
+            (self.date_interval[0] < self.buy_df["time"]) &
+            (self.buy_df["time"] <= self.date_interval[1])
+        ]
+        # 支出データの金額を整数型へ変換
+        self.buy_df["amount"] = self.buy_df["amount"].astype(int)
+        # 予算データの取得
+        self.buy_ctl_data = buy_ctl_sheet.get_buy_ctl_data(col_range="ctl")
+        self.buy_ctl_data["予算"] = self.buy_ctl_data["予算"].astype(int)
+
+        # 収入データ ########################################################################
         income_data_sheet = IncomeDataSheet()
         self.all_income_df = income_data_sheet.get_income_df()
         # 日付をdatetime型へ
@@ -238,6 +252,14 @@ class YearIncomePlot:
         self.bonus_type_dict = income_ctl_sheet.get_income_bonus_month()
         self.bonus_income_ctg = [ctg for ctg in self.bonus_type_dict if self.bonus_type_dict[ctg] != "なし"] # ボーナスのある会社
 
+        # 貯金データを取得 ################################################################
+        saving_ctl_sheet = SavingControlSheet()
+        self.saving_ctg_data = saving_ctl_sheet.get_saving_ctl_data()
+
+        saving_data_sheet = SavingDataSheet()
+        self.saving_data = saving_data_sheet.get_saving_df()
+        self.saving_data["time"] = pd.to_datetime(self.saving_data["time"])
+        self.saving_data["amount"] = self.saving_data["amount"].astype(int)
 
     def year_income_by_month(self):
 
@@ -270,12 +292,12 @@ class YearIncomePlot:
 
         plots = []
         for ctg in self.income_ctg:
-            plot = go.Bar(
+            trace = go.Bar(
                 x = month_list,
                 y = month_income_dict[ctg],
                 name = ctg,
             )
-            plots.append(plot)
+            plots.append(trace)
 
         layout = go.Layout(
             title=dict(text="今年の月毎の給与　\n期間：" + self.interval_name),
@@ -285,12 +307,190 @@ class YearIncomePlot:
 
         fig = go.Figure(data=plots, layout=layout)
 
-        report_name = "{}.html".format(self.interval_name)
-        save_path_filename = "src/templates/reports/year_income_by_month/"+report_name
-        fig.write_html(save_path_filename)
+        return pio.to_html(fig, full_html=False)
 
-        return report_name
+    def year_income_and_outgo_by_month(self):
 
+        month_list = []
+        amount_list = []
+        budget_list = []
+        for plus_month in range(12):
+            # 月の支出を取得
+            this_month_first = self.date_interval[0] + relativedelta(months=plus_month)
+            this_month = ThisMonth(now_date=this_month_first)
+            date_interval = this_month.get_date_interval()
+
+            this_month_buy_df = self.buy_df.loc[
+                (date_interval[0] <= self.buy_df["time"]) &
+                (self.buy_df["time"] < date_interval[1])
+            ]
+            this_month_amount = np.sum(this_month_buy_df["amount"])
+            amount_list.append(this_month_amount)
+            # 月の予算を計算
+            this_month_budget = np.sum(self.buy_ctl_data["予算"])
+            if this_month_amount == 0: # 支出データが存在しない場合
+                this_month_budget = 0
+            budget_list.append(this_month_budget)
+
+            # 月を文字にして、month_listに追加しておく
+            if str(this_month_first.month) == 1:
+                xlabel = str(this_month_first.year) + "-" + "0" + str(this_month_first.month)
+            else:
+                xlabel = str(this_month_first.year) + "-" + str(this_month_first.month)
+            month_list.append(xlabel)
+
+        plots = []
+        trace = go.Bar(
+            x = month_list,
+            y = [budget - amount for budget, amount in zip(budget_list, amount_list)]
+        )
+        plots.append(trace)
+
+        layout = go.Layout(
+            title=dict(text="今年の月毎の収支　\n期間：" + self.interval_name),
+            hovermode="x",
+            barmode='stack'
+            )
+
+        fig = go.Figure(data=plots, layout=layout)
+
+        return pio.to_html(fig, full_html=False)
+
+    def year_cumsum_saving(self):
+        # 貯金カテゴリを取得
+        saving_ctg_list = self.saving_ctg_data["貯金項目"].unique().tolist()
+        saving_how_to_save_list = self.saving_ctg_data["貯金方法"].unique().tolist()
+
+        month_list = []
+        # グラフの値の初期化
+        saving_dict = {"all_saving" : []}
+        for i in saving_ctg_list + saving_how_to_save_list:
+            saving_dict[i] = []
+        # グラフの値の計算
+        for plus_month in range(12):
+            this_month_first = self.date_interval[0] + relativedelta(months=plus_month)
+            this_month = ThisMonth(now_date=this_month_first)
+            date_interval = this_month.get_date_interval()
+
+            if self.now_date < date_interval[0]: # 現在の日時より先の貯金額はnp.nanとする。
+                saving_dict["all_saving"].append(np.nan)
+                for ctg in saving_ctg_list:
+                    saving_dict[ctg].append(np.nan)
+                # 貯金方法での貯金合計
+                for how_to in saving_how_to_save_list:
+                    saving_dict[how_to].append(np.nan)
+            else:
+                # 今月の合計金額を計算
+                if plus_month == 0:
+                    this_month_saving_data = self.saving_data.loc[(self.saving_data["time"] <= date_interval[0])]
+                else:
+                    this_month_saving_data = self.saving_data.loc[(
+                        (date_interval[0] <= self.saving_data["time"]) &
+                        (self.saving_data["time"] < date_interval[1])
+                    )]
+
+                # 貯金の合計
+                all_saving = np.sum(this_month_saving_data["amount"])
+                saving_dict["all_saving"].append(all_saving)
+                # 各カテゴリでの貯金合計
+                for ctg in saving_ctg_list:
+                    ctg_saving = np.sum(this_month_saving_data.loc[this_month_saving_data["category"] == ctg, "amount"])
+                    saving_dict[ctg].append(ctg_saving)
+                # 貯金方法での貯金合計
+                for how_to in saving_how_to_save_list:
+                    how_to_saving = np.sum(this_month_saving_data.loc[this_month_saving_data["how_to_save"] == how_to, "amount"])
+                    saving_dict[how_to].append(how_to_saving)
+
+            # 月を文字にして、month_listに追加しておく
+            if str(this_month_first.month) == 1:
+                xlabel = str(this_month_first.year) + "-" + "0" + str(this_month_first.month)
+            else:
+                xlabel = str(this_month_first.year) + "-" + str(this_month_first.month)
+            month_list.append(xlabel)
+
+        # 貯金額を累積和にする。
+        for key, value in saving_dict.items():
+            saving_dict[key] = np.cumsum(value).tolist()
+
+        graph_name_list = []
+        plots = []
+        # 合計貯金のグラフ
+        trace = go.Scatter(
+            x = month_list,
+            y = saving_dict["all_saving"],
+            marker_color = "blue",
+            mode = "lines+markers",
+            name = "合計金額",
+            visible = True
+        )
+        plots.append(trace)
+        graph_name_list.append("all_saving")
+        # 各カテゴリのグラフ
+        for ctg in saving_ctg_list:
+            trace = go.Scatter(
+                x = month_list,
+                y = saving_dict[ctg],
+                marker_color = "blue",
+                mode = "lines+markers",
+                name = ctg,
+                visible = False
+            )
+            plots.append(trace)
+            graph_name_list.append(ctg)
+        # 各貯金方法のグラフ
+        for how_to in saving_how_to_save_list:
+            trace = go.Scatter(
+                x = month_list,
+                y = saving_dict[how_to],
+                marker_color = "blue",
+                mode = "lines+markers",
+                name = how_to,
+                visible = False,
+            )
+            plots.append(trace)
+            graph_name_list.append(how_to)
+
+        ## ボタンの作成
+        buttons = []
+        for button_name in ["貯金額合計"] + saving_ctg_list + saving_how_to_save_list:
+            visible = [False] * len(plots)
+            if button_name == "貯金額合計":
+                visible[graph_name_list.index("all_saving")] = True
+            else:
+                visible[graph_name_list.index(button_name)] = True
+
+            button_title = "今年度の「" + button_name + "」　\n期間：" + self.interval_name
+            button = dict(
+                label = button_name, method="update",
+                args=[
+                    dict(visible=visible),
+                    dict(title=button_title),
+                ]
+            )
+            buttons.append(button)
+
+        ## updatemenuの作成
+        updatemenus = [
+            dict(
+                type="buttons", direction="right",
+                x=0.5, y=1.01, xanchor='center', yanchor='bottom',
+                active=0, buttons=buttons,
+                )
+            ]
+        ## レイアウトデータの作成
+        layout = go.Layout(
+            title=dict(text="今年度の「貯金額合計」　\n期間：" + self.interval_name),
+            updatemenus=updatemenus,
+            barmode="overlay",
+            hovermode="x",
+            )
+
+        ## figの作成
+        fig = go.Figure(data=plots, layout=layout)
+
+        fig.update_yaxes(autorange=False, range=[-(np.nanmax(saving_dict["all_saving"])*0.1), np.nanmax(saving_dict["all_saving"])*1.1])
+
+        return pio.to_html(fig, full_html=False)
 
 
 

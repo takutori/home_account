@@ -92,6 +92,15 @@
 
                     </div>
                 </div>
+				<div class="col-md-3 col-sm-6 animate-box" data-animate-effect="fadeInLeft">
+                    <div class="feature-center">
+                        <span class="icon">
+                            <i class="ti-download"></i>
+                        </span>
+                        <span class="counter"><span class="js-counter" data-from="0" data-to="{{ kpi_dict['saving'] }}" data-speed="1500" data-refresh-interval="50">{{ kpi_dict['saving'] }}</span>K+</span>
+                        <span class="counter-label">今年の貯金額</span>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -105,14 +114,37 @@
 					<p>頑張って増やしていこうな</p>
 				</div>
 			</div>
-			<div class="row row-pb-md">
-				<div class="col-md-12 text-center animate-box" data-animate-effect="fadeInUp">
-					<div class="fh5co-heading">
-						{% include "reports/year_income_by_month/%s" % report_name_dict["year_income_by_month"]  %}
-					</div>
+		</div>
+	</div>
+
+	{{ graph_dict["year_income_by_month"] | safe}}
+
+	<div id="fh5co-blog" class="fh5co-bg-section">
+		<div class="container">
+			<div class="row animate-box row-pb-md" data-animate-effect="fadeInUp">
+				<div class="col-md-8 col-md-offset-2 text-center fh5co-heading">
+					<span>年間レポート</span>
+					<h2>今年の月別収支</h2>
+					<p>見直そうな？</p>
 				</div>
 			</div>
 		</div>
 	</div>
+
+	{{ graph_dict["year_income_and_outgo_by_month"] | safe}}
+
+	<div id="fh5co-blog" class="fh5co-bg-section">
+		<div class="container">
+			<div class="row animate-box row-pb-md" data-animate-effect="fadeInUp">
+				<div class="col-md-8 col-md-offset-2 text-center fh5co-heading">
+					<span>年間レポート</span>
+					<h2>今年の貯金の遷移</h2>
+					<p>増えていくの楽しいやろ？</p>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	{{ graph_dict["year_cumsum_saving"] | safe}}
 
 {% endblock %}

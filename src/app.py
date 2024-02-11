@@ -58,30 +58,31 @@ def move_html_month_report():
     # 各KPIの取得
     calc_kpi = CalcMonthKPI()
     kpi_dict = {
+        "income" : calc_kpi.calc_income() / 1000,
         "residual_income" : calc_kpi.calc_residual_income() / 1000,
+        "saving" : calc_kpi.calc_saving() / 1000,
         "amount" : calc_kpi.calc_amount() / 1000,
         "budget" : (calc_kpi.calc_residual_income() - calc_kpi.calc_amount()) / 1000,
         "oir" : (calc_kpi.calc_amount() / calc_kpi.calc_residual_income()) * 100,
         "fixed_cost" : (calc_kpi.calc_fixed_cost()) / 1000,
         "variable_cost" : (calc_kpi.calc_variable_cost()) / 1000,
-        "saving_amount" : calc_kpi.saving_amount / 1000,
         "family_cost" : calc_kpi.calc_family_cost() / 1000,
         "work_book_cost": calc_kpi.calc_work_book_cost() / 1000,
         "engel_coefficient" : (calc_kpi.calc_engel_coefficient()) * 100,
         "extraordinary_cost" : calc_kpi.calc_extraordinary_cost() / 1000
     }
 
-    report_name_dict = {}
+    graph_dict = {}
     # カテゴリ別支出レポートを作成
     month_buy_plot = MonthBuyPlot()
-    month_amount_by_ctg_report_name = month_buy_plot.month_amount_by_ctg()
-    report_name_dict["month_amount_by_ctg"] = month_amount_by_ctg_report_name
+    month_amount_by_ctg_graph = month_buy_plot.month_amount_by_ctg()
+    graph_dict["month_amount_by_ctg"] = month_amount_by_ctg_graph
 
     # 日別購入レポートを作成
-    month_amount_by_date_report_name = month_buy_plot.month_amount_by_date()
-    report_name_dict["month_amount_by_date"] = month_amount_by_date_report_name
+    month_amount_by_date_graph = month_buy_plot.month_amount_by_date()
+    graph_dict["month_amount_by_date"] = month_amount_by_date_graph
 
-    return render_template("month_report.html", report_name_dict=report_name_dict, kpi_dict=kpi_dict)
+    return render_template("month_report.html", graph_dict=graph_dict, kpi_dict=kpi_dict)
 
 
 ### year report page ################################################################
@@ -92,36 +93,25 @@ def move_html_year_report():
     kpi_dict = {
         "income" : calc_kpi.calc_income() / 1000,
         "residual_income" : calc_kpi.calc_residual_income() / 1000,
-        "pred_income" : calc_kpi.calc_pred_income() / 1000
+        "pred_income" : calc_kpi.calc_pred_income() / 1000,
+        "saving" : calc_kpi.calc_saving() / 1000
     }
 
-    report_name_dict = {}
+    graph_dict = {}
     # 年収グラフ
     year_income_plot = YearIncomePlot()
-    year_income_by_month_report_name = year_income_plot.year_income_by_month()
-    report_name_dict["year_income_by_month"] = year_income_by_month_report_name
+    year_income_by_month_graph = year_income_plot.year_income_by_month()
+    graph_dict["year_income_by_month"] = year_income_by_month_graph
 
-    return render_template("year_report.html", report_name_dict=report_name_dict, kpi_dict=kpi_dict)
+    # 収支グラフ
+    year_income_and_outgo_by_month_graph = year_income_plot.year_income_and_outgo_by_month()
+    graph_dict["year_income_and_outgo_by_month"] = year_income_and_outgo_by_month_graph
 
+    # 貯金グラフ
+    year_cumsum_saving_graph = year_income_plot.year_cumsum_saving()
+    graph_dict["year_cumsum_saving"] = year_cumsum_saving_graph
 
-### saving report page ################################################################
-@app.route("/move_saving_report_page", methods=["GET", "POST"])
-def move_html_saving_report():
-    # 各KPIの取得
-    calc_kpi = CalcYearKPI()
-    kpi_dict = {
-        "income" : calc_kpi.calc_income() / 1000,
-        "residual_income" : calc_kpi.calc_residual_income() / 1000,
-        "pred_income" : calc_kpi.calc_pred_income() / 1000
-    }
-
-    report_name_dict = {}
-    # 年収グラフ
-    year_income_plot = YearIncomePlot()
-    year_income_by_month_report_name = year_income_plot.year_income_by_month()
-    report_name_dict["year_income_by_month"] = year_income_by_month_report_name
-
-    return render_template("year_report.html", report_name_dict=report_name_dict, kpi_dict=kpi_dict)
+    return render_template("year_report.html", graph_dict=graph_dict, kpi_dict=kpi_dict)
 
 
 ### registration_buy page ################################################################
@@ -231,12 +221,10 @@ def input_saving():
             how_to_save = saving_ctg.split("-")[1]
             # スプレッドシートに書き込み
             saving_data_sheet.input_saving(saving_date, ctg, how_to_save, int(amount))
-
     ctg_dict = get_ctg()
-
 
     return render_template('registraion_saving.html', ctg_dict=ctg_dict)
 
 
 if __name__ == "__main__":
-    app.run()
+    app.run(debug=True)
