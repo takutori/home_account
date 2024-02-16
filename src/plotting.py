@@ -16,11 +16,11 @@ from calc_kpi import CalcMonthKPI
 
 
 class MonthBuyPlot:
-    def __init__(self):
+    def __init__(self, now_date):
 
         # 今月のデータ(25日~24日)のみ所得 ########################################################################
         # 今月の日時情報を取得
-        this_month = ThisMonth()
+        this_month = ThisMonth(now_date=now_date)
         self.date_format = this_month.get_date_format()
         self.now_date = this_month.get_now_date()
         self.date_interval = this_month.get_date_interval()
@@ -200,9 +200,9 @@ class MonthBuyPlot:
 
 
 class YearIncomePlot:
-    def __init__(self):
+    def __init__(self, now_date):
         # 今月の日時情報を取得
-        this_year = ThisYear()
+        this_year = ThisYear(now_date)
         self.now_date = this_year.get_now_date()
         self.date_format = this_year.get_date_format()
         self.date_interval = this_year.get_date_interval()
@@ -210,7 +210,6 @@ class YearIncomePlot:
         self.month_left = this_year.get_month_left()
         # 期間の名前
         self.interval_name = self.date_interval[0].strftime(self.date_format) + "_" + self.date_interval[1].strftime(self.date_format)
-
         # 支出カテゴリーの取得 #########################################################################
         buy_ctl_sheet = BuyControlSheet()
         self.buy_ctg = buy_ctl_sheet.get_ctg_dict()
@@ -339,10 +338,13 @@ class YearIncomePlot:
                 xlabel = str(this_month_first.year) + "-" + str(this_month_first.month)
             month_list.append(xlabel)
 
+        income_outgo_list = [budget - amount for budget, amount in zip(budget_list, amount_list)]
+        colors = ["#636EFA" if  x > 0 else "#EF553B" for x in income_outgo_list]
         plots = []
         trace = go.Bar(
             x = month_list,
-            y = [budget - amount for budget, amount in zip(budget_list, amount_list)]
+            y = income_outgo_list,
+            marker_color = colors
         )
         plots.append(trace)
 
@@ -418,7 +420,7 @@ class YearIncomePlot:
         trace = go.Scatter(
             x = month_list,
             y = saving_dict["all_saving"],
-            marker_color = "blue",
+            #marker_color = "blue",
             mode = "lines+markers",
             name = "合計金額",
             visible = True
@@ -430,7 +432,7 @@ class YearIncomePlot:
             trace = go.Scatter(
                 x = month_list,
                 y = saving_dict[ctg],
-                marker_color = "blue",
+                #marker_color = "blue",
                 mode = "lines+markers",
                 name = ctg,
                 visible = False
@@ -442,7 +444,7 @@ class YearIncomePlot:
             trace = go.Scatter(
                 x = month_list,
                 y = saving_dict[how_to],
-                marker_color = "blue",
+                #marker_color = "blue",
                 mode = "lines+markers",
                 name = how_to,
                 visible = False,
@@ -468,6 +470,17 @@ class YearIncomePlot:
                 ]
             )
             buttons.append(button)
+        # 全部のグラフを表示
+        visible = [True] * len(saving_dict)
+        button_title = "今年度の「全ての貯金項目」　\n期間：" + self.interval_name
+        button = dict(
+            label = "全カテゴリー", method="update",
+            args=[
+                dict(visible=visible),
+                dict(title=button_title),
+            ]
+        )
+        buttons.append(button)
 
         ## updatemenuの作成
         updatemenus = [
