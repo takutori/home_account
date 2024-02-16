@@ -10,9 +10,9 @@ from handle_time import ThisMonth, ThisYear
 import pdb
 
 class CalcMonthKPI:
-    def __init__(self):
+    def __init__(self, now_date: str=None):
         # 今月の日時情報を取得
-        this_month = ThisMonth()
+        this_month = ThisMonth(now_date=now_date)
         self.date_format = this_month.get_date_format()
         self.now_date = this_month.get_now_date()
         self.date_interval = this_month.get_date_interval()
@@ -93,9 +93,9 @@ class CalcMonthKPI:
 
 
 class CalcYearKPI:
-    def __init__(self):
+    def __init__(self, now_date: str=None):
         # 今月の日時情報を取得
-        this_year = ThisYear()
+        this_year = ThisYear(now_date=now_date)
         self.now_date = this_year.get_now_date()
         self.date_format = this_year.get_date_format()
         self.date_interval = this_year.get_date_interval()
@@ -141,46 +141,48 @@ class CalcYearKPI:
     def calc_pred_income(self):
         now_income = self.calc_income()
         pred = now_income
+        if self.date_interval[1] < datetime.now():
+            return now_income
+        else:
+            # 直近の月給*残りの月を予測値に加える
+            for ctg in self.permanent_income_ctg:
+                last_payday = self.income_df.loc[(self.income_df["category"] == ctg) & (self.income_df["income_type"] == "月給")]["time"].max()
+                last_income = self.income_df.loc[(self.income_df["time"] == last_payday) & (self.income_df["category"] == ctg)]["income"].iloc[-1]
 
-        # 直近の月給*残りの月を予測値に加える
-        for ctg in self.permanent_income_ctg:
-            last_payday = self.income_df.loc[(self.income_df["category"] == ctg) & (self.income_df["income_type"] == "月給")]["time"].max()
-            last_income = self.income_df.loc[(self.income_df["time"] == last_payday) & (self.income_df["category"] == ctg)]["income"].iloc[-1]
+                this_month_payday = get_this_month_payday(
+                    payday=self.payday_dict[ctg],
+                    this_year = self.now_date.year,
+                    this_month = self.now_date.month
+                )
+                if self.now_date < this_month_payday: # 今月の給料はまだ
+                    pred += (self.month_left + 1) * last_income
+                else:
+                    pred += self.month_left * last_income
 
-            this_month_payday = get_this_month_payday(
-                payday=self.payday_dict[ctg],
-                this_year = self.now_date.year,
-                this_month = self.now_date.month
-            )
-            if self.now_date < this_month_payday: # 今月の給料はまだ
-                pred += (self.month_left + 1) * last_income
-            else:
-                pred += self.month_left * last_income
+            # 直近一年間のボーナス平均も予測値に加える
+            for ctg in self.bonus_income_ctg:
+                last_date_interval = [
+                    self.now_date - relativedelta(years=1),
+                    self.now_date
+                ]
+                most_recent_1year_income_df = self.all_income_df.loc[
+                    (last_date_interval[0] <= self.all_income_df["time"]) &
+                    (self.all_income_df["time"] < last_date_interval[1]) &
+                    (self.all_income_df["category"] == ctg) &
+                    (self.all_income_df["income_type"] == "ボーナス")
+                ]
+                most_recent_1year_bonus_mean = np.mean(most_recent_1year_income_df["income"])
 
-        # 直近一年間のボーナス平均も予測値に加える
-        for ctg in self.bonus_income_ctg:
-            last_date_interval = [
-                self.now_date - relativedelta(years=1),
-                self.now_date
-            ]
-            most_recent_1year_income_df = self.all_income_df.loc[
-                (last_date_interval[0] <= self.all_income_df["time"]) &
-                (self.all_income_df["time"] < last_date_interval[1]) &
-                (self.all_income_df["category"] == ctg) &
-                (self.all_income_df["income_type"] == "ボーナス")
-            ]
-            most_recent_1year_bonus_mean = np.mean(most_recent_1year_income_df["income"])
+                bonus_month_day_list = self.bonus_type_dict[ctg].split("_")
+                for bonus_month_day in bonus_month_day_list:
+                    bonus_month = int(bonus_month_day.split("-")[0])
+                    bonus_day = int(bonus_month_day.split("-")[1])
 
-            bonus_month_day_list = self.bonus_type_dict[ctg].split("_")
-            for bonus_month_day in bonus_month_day_list:
-                bonus_month = int(bonus_month_day.split("-")[0])
-                bonus_day = int(bonus_month_day.split("-")[1])
+                    bonus_date = datetime(year=self.now_date.year, month=bonus_month, day=bonus_day, hour=0, minute=0, second=0, microsecond=0)
+                    if self.now_date < bonus_date: # bunus_dateはまだ来てない
+                        pred += most_recent_1year_bonus_mean
 
-                bonus_date = datetime(year=self.now_date.year, month=bonus_month, day=bonus_day, hour=0, minute=0, second=0, microsecond=0)
-                if self.now_date < bonus_date: # bunus_dateはまだ来てない
-                    pred += most_recent_1year_bonus_mean
-
-        return pred
+            return pred
 
     def calc_saving(self):
         # 貯金額を計算
