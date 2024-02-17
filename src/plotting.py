@@ -312,6 +312,7 @@ class YearIncomePlot:
 
         month_list = []
         amount_list = []
+        all_budget_list = []
         budget_list = []
         for plus_month in range(12):
             # 月の支出を取得
@@ -330,7 +331,18 @@ class YearIncomePlot:
             if this_month_amount == 0: # 支出データが存在しない場合
                 this_month_budget = 0
             budget_list.append(this_month_budget)
-
+            # 月の手取り-貯金額を計算
+            this_month_income = self.income_df.loc[
+                (date_interval[0] <= self.income_df["time"]) &
+                (self.income_df["time"] < date_interval[1])
+            ]
+            residual_income = np.sum(this_month_income["residual_income"])
+            this_month_saving = self.saving_data.loc[
+                (date_interval[0] <= self.saving_data["time"]) &
+                (self.saving_data["time"] < date_interval[1])
+            ]
+            saving = np.sum(this_month_saving["amount"])
+            all_budget_list.append(residual_income - saving - this_month_amount)
             # 月を文字にして、month_listに追加しておく
             if str(this_month_first.month) == 1:
                 xlabel = str(this_month_first.year) + "-" + "0" + str(this_month_first.month)
@@ -339,17 +351,52 @@ class YearIncomePlot:
             month_list.append(xlabel)
 
         income_outgo_list = [budget - amount for budget, amount in zip(budget_list, amount_list)]
-        colors = ["#636EFA" if  x > 0 else "#EF553B" for x in income_outgo_list]
         plots = []
         trace = go.Bar(
             x = month_list,
             y = income_outgo_list,
-            marker_color = colors
+            marker_color = ["#636EFA" if  x > 0 else "#EF553B" for x in income_outgo_list],
+            visible = True
         )
         plots.append(trace)
+        trace = go.Bar(
+            x = month_list,
+            y = all_budget_list,
+            marker_color = ["#636EFA" if  x > 0 else "#EF553B" for x in all_budget_list],
+            visible = False
+        )
+        plots.append(trace)
+        ## ボタンの作成
+        buttons = []
+        button = dict(
+            label="予算", method="update",
+            args=[
+                dict(visible=[True, False]),
+                dict(title="予算")
+            ]
+        )
+        buttons.append(button)
+        button = dict(
+            label="可処分所得", method="update",
+            args=[
+                dict(visible=[False, True]),
+                dict(title="貯金額を除いた可処分所得")
+            ]
+        )
+        buttons.append(button)
+
+        ## updatemenuの作成
+        updatemenus = [
+            dict(
+                type="buttons", direction="right",
+                x=0.5, y=1.01, xanchor='center', yanchor='bottom',
+                active=0, buttons=buttons,
+                )
+            ]
 
         layout = go.Layout(
             title=dict(text="今年の月毎の収支　\n期間：" + self.interval_name),
+            updatemenus=updatemenus,
             hovermode="x",
             barmode='stack'
             )
@@ -368,6 +415,9 @@ class YearIncomePlot:
         saving_dict = {"all_saving" : []}
         for i in saving_ctg_list + saving_how_to_save_list:
             saving_dict[i] = []
+        for ctg in saving_ctg_list:
+            for how_to in saving_how_to_save_list:
+                saving_dict[ctg+"-"+how_to] = []
         # グラフの値の計算
         for plus_month in range(12):
             this_month_first = self.date_interval[0] + relativedelta(months=plus_month)
@@ -398,6 +448,14 @@ class YearIncomePlot:
                 for ctg in saving_ctg_list:
                     ctg_saving = np.sum(this_month_saving_data.loc[this_month_saving_data["category"] == ctg, "amount"])
                     saving_dict[ctg].append(ctg_saving)
+                # カテゴリでの貯金方法の貯金合計
+                for ctg in saving_ctg_list:
+                    for how_to in saving_how_to_save_list:
+                        ctg_howto_saving = np.sum(this_month_saving_data.loc[
+                            (this_month_saving_data["category"] == ctg) &
+                            (this_month_saving_data["how_to_save"] == how_to)
+                        , "amount"])
+                        saving_dict[ctg+"-"+how_to].append(ctg_howto_saving)
                 # 貯金方法での貯金合計
                 for how_to in saving_how_to_save_list:
                     how_to_saving = np.sum(this_month_saving_data.loc[this_month_saving_data["how_to_save"] == how_to, "amount"])
@@ -423,7 +481,8 @@ class YearIncomePlot:
             #marker_color = "blue",
             mode = "lines+markers",
             name = "合計金額",
-            visible = True
+            visible = True,
+            fill = "tozeroy"
         )
         plots.append(trace)
         graph_name_list.append("all_saving")
@@ -435,10 +494,25 @@ class YearIncomePlot:
                 #marker_color = "blue",
                 mode = "lines+markers",
                 name = ctg,
-                visible = False
+                visible = True,
+                fill = "tozeroy"
             )
             plots.append(trace)
             graph_name_list.append(ctg)
+        # 各カテゴリ-貯金方法のグラフ
+        for ctg in saving_ctg_list:
+            for how_to in saving_how_to_save_list:
+                trace = go.Scatter(
+                    x = month_list,
+                    y = saving_dict[ctg+"-"+how_to],
+                    #marker_color = "blue",
+                    mode = "lines+markers",
+                    name = ctg + "-" + how_to,
+                    visible = False,
+                    fill = "tozeroy"
+                )
+                plots.append(trace)
+                graph_name_list.append(ctg+"-"+how_to)
         # 各貯金方法のグラフ
         for how_to in saving_how_to_save_list:
             trace = go.Scatter(
@@ -448,6 +522,7 @@ class YearIncomePlot:
                 mode = "lines+markers",
                 name = how_to,
                 visible = False,
+                fill = "tozeroy"
             )
             plots.append(trace)
             graph_name_list.append(how_to)
@@ -458,6 +533,12 @@ class YearIncomePlot:
             visible = [False] * len(plots)
             if button_name == "貯金額合計":
                 visible[graph_name_list.index("all_saving")] = True
+                for ctg in saving_ctg_list: # 貯金額合計では、各貯金項目のグラフも表示
+                    visible[graph_name_list.index(ctg)] = True
+            elif saving_ctg_list.count(button_name) == 1:
+                visible[graph_name_list.index(button_name)] = True
+                for how_to in saving_how_to_save_list:
+                    visible[graph_name_list.index(button_name+"-"+how_to)] = True
             else:
                 visible[graph_name_list.index(button_name)] = True
 

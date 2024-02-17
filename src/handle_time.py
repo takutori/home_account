@@ -58,9 +58,6 @@ class ThisMonth(ThisTime):
 class ThisYear(ThisTime):
     def __init__(self, now_date=None):
         super().__init__(now_date=now_date)
-        # 現在の日時
-        self.now_date = datetime.now()
-
         # 一年の範囲を取得
         # 今年度の場合
         self.date_interval = self.set_year_interval_with_start_month4()
