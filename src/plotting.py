@@ -342,6 +342,8 @@ class YearIncomePlot:
                 (self.saving_data["time"] < date_interval[1])
             ]
             saving = np.sum(this_month_saving["amount"])
+            if saving < 0:
+                saving = 0
             all_budget_list.append(residual_income - saving - this_month_amount)
             # 月を文字にして、month_listに追加しておく
             if str(this_month_first.month) == 1:

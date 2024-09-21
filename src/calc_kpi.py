@@ -53,10 +53,10 @@ class CalcMonthKPI:
 
     def calc_residual_income(self):
         # 貯金額を引いた可処分所得を計算
-        if self.cacl_saving > 0:
+        if self.calc_saving() > 0:
             return self.calc_income() - self.calc_saving()
-        else:
-            return self.calc_income
+        else: # 貯金額合計がマイナスの場合、貯金が減っているため、この関数の出力は手取りそのまま
+            return self.calc_income()
 
     def calc_amount(self):
         # 支出額の合計を計算
