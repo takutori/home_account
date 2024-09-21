@@ -103,7 +103,7 @@ def get_history_year_list():
 
     return year_list
 
-def transform_datetime_from_str(date_str: str):
+def transform_datetime_from_str(date_str: str | None):
     if date_str == None:
         return datetime.now()
     elif len(date_str.split("-")) == 1:
@@ -143,9 +143,11 @@ def move_html_month_report():
     year_month_list = get_history_year_month_list()
     if request.method == "POST":
         year_month = request.form.get("month_selector")
+        now_date = transform_datetime_from_str(year_month)
     else:
         year_month = year_month_list[-1]
-    now_date = transform_datetime_from_str(year_month)
+        now_date = datetime.now()
+
     # 各KPIの取得
     calc_kpi = CalcMonthKPI(now_date=now_date)
     kpi_dict = {
