@@ -49,11 +49,14 @@ class CalcMonthKPI:
 
     def calc_saving(self):
         # 貯金額を計算
-        return np.sum(self.saving_df["amount"])
+        return np.sum(self.saving_df.loc[self.saving_df["amount"]>0, "amount"])
 
     def calc_residual_income(self):
         # 貯金額を引いた可処分所得を計算
-        return self.calc_income() - self.calc_saving()
+        if self.calc_saving() > 0:
+            return self.calc_income() - self.calc_saving()
+        else: # 貯金額合計がマイナスの場合、貯金が減っているため、この関数の出力は手取りそのまま
+            return self.calc_income()
 
     def calc_amount(self):
         # 支出額の合計を計算
@@ -147,7 +150,10 @@ class CalcYearKPI:
             # 直近の月給*残りの月を予測値に加える
             for ctg in self.permanent_income_ctg:
                 last_payday = self.income_df.loc[(self.income_df["category"] == ctg) & (self.income_df["income_type"] == "月給")]["time"].max()
-                last_income = self.income_df.loc[(self.income_df["time"] == last_payday) & (self.income_df["category"] == ctg)]["income"].iloc[-1]
+                if len(self.income_df.loc[(self.income_df["time"] == last_payday) & (self.income_df["category"] == ctg)]["income"]) != 0:
+                    last_income = self.income_df.loc[(self.income_df["time"] == last_payday) & (self.income_df["category"] == ctg)]["income"].iloc[-1]
+                else:
+                    last_income = 0
 
                 this_month_payday = get_this_month_payday(
                     payday=self.payday_dict[ctg],

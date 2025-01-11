@@ -342,6 +342,8 @@ class YearIncomePlot:
                 (self.saving_data["time"] < date_interval[1])
             ]
             saving = np.sum(this_month_saving["amount"])
+            if saving < 0:
+                saving = 0
             all_budget_list.append(residual_income - saving - this_month_amount)
             # 月を文字にして、month_listに追加しておく
             if str(this_month_first.month) == 1:
@@ -366,12 +368,25 @@ class YearIncomePlot:
             visible = False
         )
         plots.append(trace)
+        # 可処分所得の残金の累積
+        cumsum_all_budget_array = np.cumsum(all_budget_list)
+        if cumsum_all_budget_array[-1] > 0:
+            color="lime"
+        else:
+            color="red"
+        trace = go.Scatter(
+            x = month_list,
+            y = cumsum_all_budget_array,
+            marker_color = color,
+            visible = False
+        )
+        plots.append(trace)
         ## ボタンの作成
         buttons = []
         button = dict(
             label="予算", method="update",
             args=[
-                dict(visible=[True, False]),
+                dict(visible=[True, False, False]),
                 dict(title="予算")
             ]
         )
@@ -379,7 +394,7 @@ class YearIncomePlot:
         button = dict(
             label="可処分所得", method="update",
             args=[
-                dict(visible=[False, True]),
+                dict(visible=[False, True, True]),
                 dict(title="貯金額を除いた可処分所得")
             ]
         )
