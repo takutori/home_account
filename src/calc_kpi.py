@@ -49,7 +49,7 @@ class CalcMonthKPI:
 
     def calc_saving(self):
         # 貯金額を計算
-        return np.sum(self.saving_df["amount"])
+        return np.sum(self.saving_df.loc[self.saving_df["amount"]>0, "amount"])
 
     def calc_residual_income(self):
         # 貯金額を引いた可処分所得を計算
