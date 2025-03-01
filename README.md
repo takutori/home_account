@@ -6,10 +6,10 @@
 
 ※数値は仮
 
-![ホーム画面](markdown_images/picture_home.png)
-![ホーム画面](markdown_images/registration_buy.png)
-![ホーム画面](markdown_images/registration_income.png)
-![ホーム画面](markdown_images/month_report.png)
+![ホーム画面](img/picture_home.png)
+![ホーム画面](img/registration_buy.png)
+![ホーム画面](img/registration_income.png)
+![ホーム画面](img/month_report.png)
 
 # Usage
 
