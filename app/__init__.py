@@ -1,5 +1,5 @@
 from flask import Flask
-from app.views.index_view import index_app
+from app.views.view_index import index_app
 from app.views.view_registration import registration_app
 from app.views.view_report import report_app
 
