@@ -6,7 +6,7 @@ from dateutil.relativedelta import relativedelta
 
 
 from app.models.gspread_workbook import BuyControlSheet, BuyDataSheet, IncomeControlSheet, IncomeDataSheet, SavingControlSheet, SavingDataSheet
-from handle_time import ThisMonth, ThisYear
+from app.services.accounting_interval import ThisMonth, ThisYear
 import pdb
 
 class CalcMonthKPI:
