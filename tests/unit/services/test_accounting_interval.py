@@ -62,6 +62,20 @@ class TestThisMonth:
         this_month = ThisMonth(now_date="1999-12-25")
         assert this_month.get_days_left() == 31
 
+    def test_get_last_day(self):
+        this_month = ThisMonth(now_date="2000-01-24")
+        last_day = this_month.get_last_day()
+        assert last_day.year == 2000
+        assert last_day.month == 1
+        assert last_day.day == 31
+
+        this_month = ThisMonth(now_date="2001-02-24")
+        last_day = this_month.get_last_day()
+        assert last_day.year == 2001
+        assert last_day.month == 2
+        assert last_day.day == 28
+
+
 class TestThisYear:
     def test_get_date_interval(self):
         this_year = ThisYear(now_date="2000-01-01", start_month=1)

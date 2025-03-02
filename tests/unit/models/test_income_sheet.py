@@ -51,7 +51,7 @@ class TestIncomeDataSheet:
     def test_init(self, mock_sheet):
         buy_data_sheet = IncomeDataSheet(sheet=mock_sheet)
         assert buy_data_sheet.sheet_name == "収入データ"
-        assert buy_data_sheet.data.columns.tolist() == ["time", "category", "income_type", "income", "residual_income", "income_tax", "resident_tax"]
+        assert buy_data_sheet.data.columns.tolist() == ["time", "category", "income_type", "income", "residual_income"]
 
     @pytest.mark.skip(reason="APIを使用するため基本はスキップ")
     def test_input_buy(self):

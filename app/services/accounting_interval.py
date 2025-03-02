@@ -1,7 +1,7 @@
 from abc import ABCMeta, abstractmethod
 from typing import Literal
 from datetime import datetime
-
+from dateutil.relativedelta import relativedelta
 
 class ThisTime(metaclass=ABCMeta):
     def __init__(self, now_date: str | None=None):
@@ -70,9 +70,32 @@ class ThisMonth(ThisTime):
         date_interval = [start_date, finish_date]
         return date_interval
 
-    def get_days_left(self):
+    def get_days_left(self) -> datetime:
+        """
+        月の残りの日を数える
+
+        Returns
+        -------
+        datetime
+            残りの日
+        """
         date_interval = self.get_date_interval()
         return (date_interval[1] - self._now_date).days
+
+    def get_last_day(self) -> datetime:
+        """
+        今月の最終日を出力する
+
+        Returns
+        -------
+        datetime
+            今月の最終日
+        """
+        next_month_first_date = self._now_date + relativedelta(months=1)
+        next_month_first_date = next_month_first_date.replace(day=1)
+        this_month_last_date = next_month_first_date + relativedelta(days=-1)
+
+        return this_month_last_date
 
 
 class ThisYear(ThisTime):

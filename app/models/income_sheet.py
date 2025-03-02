@@ -95,6 +95,7 @@ class IncomeDataSheet(Sheet):
         values : list
             追加するデータ。二次元のリスト。
         """
+        # TODO: マイナスの値は入力できないようにする。
         self._sheet.append_rows(
             values=values,
             insert_data_option="INSERT_ROWS"
