@@ -32,7 +32,7 @@ class TestSavingControlSheet:
     def test_get_saving_ctg(self, mock_sheet):
         saving_ctl_sheet = SavingControlSheet(sheet=mock_sheet)
         ctg = saving_ctl_sheet.get_saving_ctg()
-        assert ctg == ['老後貯金-積立NISA', '谷口家族貯金-預金', '谷口家族貯金-積立NISA', '臨時出費貯金-預金', '結婚貯金-積立NISA', '結婚貯金-預金']
+        assert ctg == ['老後貯金-積立NISA', '家族貯金-預金', '家族貯金-積立NISA', '臨時出費貯金-預金', '結婚貯金-積立NISA', '結婚貯金-預金']
 
 
 class TestSavingDataSheet:

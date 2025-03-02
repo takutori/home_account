@@ -1,222 +1,168 @@
+from typing import Literal
 import numpy as np
 import pandas as pd
-
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 
 
-from app.models.gspread_workbook import BuyControlSheet, BuyDataSheet, IncomeControlSheet, IncomeDataSheet, SavingControlSheet, SavingDataSheet
-from handle_time import ThisMonth, ThisYear
-import pdb
 
-class CalcMonthKPI:
-    def __init__(self, now_date: str=None):
-        # 今月の日時情報を取得
-        this_month = ThisMonth(now_date=now_date)
-        self.date_format = this_month.get_date_format()
-        self.now_date = this_month.get_now_date()
-        self.date_interval = this_month.get_date_interval()
+class AccountingMonthKPI:
+    """会計期間を絞った状態のデータを受け取り、各KPIを計算する"""
+    def __init__(self, buy_data: pd.DataFrame, income_data: pd.DataFrame, saving_data: pd.DataFrame):
+        """
+        コンストラクタ
 
-        # 購入データ
-        buy_data_sheet = BuyDataSheet()
-        self.buy_df = buy_data_sheet.get_buy_df()
-        self.buy_df["time"] = pd.to_datetime(self.buy_df["time"], format=self.date_format)
-        self.buy_df = self.buy_df.loc[
-            (self.date_interval[0] < self.buy_df["time"]) & (self.buy_df["time"] <= self.date_interval[1])
-            ]
-        self.buy_df["amount"] = self.buy_df["amount"].astype(int)
+        Parameters
+        ----------
+        buy_data : pd.DataFrame
+            支出データ
+        income_data : pd.DataFrame
+            収入データ
+        saving_data : pd.DataFrame
+            貯金データ
+        """
+        self._buy_data = buy_data
+        self._income_data = income_data
+        self._saving_data = saving_data
 
-        # 収入データ
-        income_data_sheet = IncomeDataSheet()
-        self.income_df = income_data_sheet.get_income_df()
-        self.income_df["time"] = pd.to_datetime(self.income_df["time"], format=self.date_format)
-        self.income_df = self.income_df.loc[
-            (self.date_interval[0] <= self.income_df["time"]) & (self.income_df["time"] < self.date_interval[1])
-        ]
-        self.income_df["income"] = self.income_df["income"].astype(int)
-        self.income_df["residual_income"] = self.income_df["residual_income"].astype(int)
-
-        # 貯金データ
-        saving_data_sheet = SavingDataSheet()
-        self.saving_df = saving_data_sheet.get_saving_df()
-        self.saving_df["time"] = pd.to_datetime(self.saving_df["time"], format=self.date_format)
-        self.saving_df = self.saving_df.loc[(self.date_interval[0] <= self.saving_df["time"]) & (self.saving_df["time"] < self.date_interval[1])]
-        self.saving_df["amount"] = self.saving_df["amount"].astype(int)
-
-    def calc_income(self):
+    def calc_residual_income(self) -> int:
         # 手取りを計算
-        return np.sum(self.income_df["residual_income"])
+        return int(self._income_data["residual_income"].sum())
 
-    def calc_saving(self):
+    def calc_saving(self) -> int:
         # 貯金額を計算
-        return np.sum(self.saving_df.loc[self.saving_df["amount"]>0, "amount"])
+        return int(self._saving_data.loc[self._saving_data["amount"]>0, "amount"].sum())
 
-    def calc_residual_income(self):
+    def calc_residual_income_minus_saving(self) -> int:
         # 貯金額を引いた可処分所得を計算
-        if self.calc_saving() > 0:
-            return self.calc_income() - self.calc_saving()
-        else: # 貯金額合計がマイナスの場合、貯金が減っているため、この関数の出力は手取りそのまま
-            return self.calc_income()
+        return self.calc_residual_income() - self.calc_saving()
 
-    def calc_amount(self):
+    def calc_amount(self) -> int:
         # 支出額の合計を計算
-        return np.sum(self.buy_df["amount"])
+        return int(self._buy_data["amount"].sum())
 
-    def calc_fixed_cost(self):
+    def calc_fixed_cost(self) -> int:
         # 固定費を計算
-        return np.sum(self.buy_df.loc[self.buy_df["fix_variable"] == "固定", "amount"])
+        return int(self._buy_data.loc[self._buy_data["fix_variable"] == "固定", "amount"].sum())
 
-    def calc_variable_cost(self):
+    def calc_variable_cost(self) -> int:
         # 変動費を計算
-        return np.sum(self.buy_df.loc[self.buy_df["fix_variable"] == "変動", "amount"])
+        return int(self._buy_data.loc[self._buy_data["fix_variable"] == "変動", "amount"].sum())
 
-    def calc_family_cost(self):
-        return np.sum(self.buy_df.loc[self.buy_df["category1"] == "家族費", "amount"])
+    def calc_family_cost(self) -> int:
+        # 家族費を計算
+        return int(self._buy_data.loc[self._buy_data["category1"] == "家族費", "amount"].sum())
 
-    def calc_amount_avoid_family(self):
+    def calc_amount_avoid_family(self) -> int:
         # 家族費を除いた支出額を計算
-        return np.sum(self.buy_df.loc[self.buy_df["category1"] != "家族費", "amount"])
+        return int(self._buy_data.loc[self._buy_data["category1"] != "家族費", "amount"].sum())
 
-    def calc_work_book_cost(self):
+    def calc_work_book_cost(self) -> int:
         # 仕事カテゴリーの本の合計金額を計算
-        work_book_cost = np.sum(self.buy_df.loc[
-            (self.buy_df["category1"] == "仕事費") &
-            (self.buy_df["category2"] == "本")
-        , "amount"])
+        work_book_cost = int(self._buy_data.loc[
+            (self._buy_data["category1"] == "仕事費") &
+            (self._buy_data["category2"] == "本")
+        , "amount"].sum())
         return work_book_cost
 
-    def calc_engel_coefficient(self):
+    def calc_engel_coefficient(self) -> float:
         # 食費が「家族費を除いた支出額」の何割かを計算
-        male_cost = np.sum(self.buy_df.loc[self.buy_df["category1"] == "食費", "amount"])
+        male_cost = int(self._buy_data.loc[self._buy_data["category1"] == "食費", "amount"].sum())
         return male_cost / self.calc_amount_avoid_family()
 
-    def calc_extraordinary_cost(self):
-        return np.sum(self.buy_df.loc[self.buy_df["category1"] == "臨時費", "amount"])
+    def calc_extraordinary_cost(self) -> int:
+        # 臨時出費費
+        return int(self._buy_data.loc[self._buy_data["category1"] == "臨時費", "amount"].sum())
 
 
 
-class CalcYearKPI:
-    def __init__(self, now_date: str=None):
-        # 今月の日時情報を取得
-        this_year = ThisYear(now_date=now_date)
-        self.now_date = this_year.get_now_date()
-        self.date_format = this_year.get_date_format()
-        self.date_interval = this_year.get_date_interval()
-        # 今月を除く残りの月
-        self.month_left = this_year.get_month_left()
+class AccountingYearKPI:
+    """会計期間を絞った状態のデータを受け取り、各KPIを計算する"""
+    def __init__(self, buy_data: pd.DataFrame, income_data: pd.DataFrame, saving_data: pd.DataFrame):
+        """
+        コンストラクタ
 
-        # 収入データ
-        income_data_sheet = IncomeDataSheet()
-        self.all_income_df = income_data_sheet.get_income_df()
-        # 日付をdatetime型へ
-        self.all_income_df["time"] = pd.to_datetime(self.all_income_df["time"])
-        # income, residual_incomeを数値データへ
-        self.all_income_df["income"] = self.all_income_df["income"].astype(int)
-        self.all_income_df["residual_income"] = self.all_income_df["residual_income"].astype(int)
-        # 今年のデータのみにする
-        self.income_df = self.all_income_df.loc[
-            (self.date_interval[0] <= self.all_income_df["time"]) &
-            (self.all_income_df["time"] < self.date_interval[1])
-        ]
+        Parameters
+        ----------
+        buy_data : pd.DataFrame
+            支出データ
+        income_data : pd.DataFrame
+            収入データ
+        saving_data : pd.DataFrame
+            貯金データ
+        """
+        self._buy_data = buy_data
+        self._income_data = income_data
+        self._saving_data = saving_data
 
-        # 収入カテゴリを取得
-        income_ctl_sheet = IncomeControlSheet()
-        self.income_ctg = income_ctl_sheet.get_income_ctg()
-        # その他カテゴリを定義
-        self.payday_dict = income_ctl_sheet.get_income_pay_day()
-        self.permanent_income_ctg = [ctg for ctg in self.payday_dict if self.payday_dict[ctg] != "臨時"] # 恒久的に給与が与えられる会社
-        self.bonus_type_dict = income_ctl_sheet.get_income_bonus_month()
-        self.bonus_income_ctg = [ctg for ctg in self.bonus_type_dict if self.bonus_type_dict[ctg] != "なし"] # ボーナスのある会社
+    def calc_income(self) -> int:
+        return int(self._income_data["income"].sum())
 
-        # 貯金データ
-        saving_data_sheet = SavingDataSheet()
-        self.saving_df = saving_data_sheet.get_saving_df()
-        self.saving_df["time"] = pd.to_datetime(self.saving_df["time"], format=self.date_format)
-        self.saving_df = self.saving_df.loc[(self.date_interval[0] <= self.saving_df["time"]) & (self.saving_df["time"] < self.date_interval[1])]
-        self.saving_df["amount"] = self.saving_df["amount"].astype(int)
+    def calc_residual_income(self) -> int:
+        return int(self._income_data["residual_income"].sum())
 
-    def calc_income(self):
-        return np.sum(self.income_df["income"])
 
-    def calc_residual_income(self):
-        return np.sum(self.income_df["residual_income"])
+    def calc_saving(self) -> int:
+        # 貯金額を計算
+        return int(self._saving_data["amount"].sum())
 
-    def calc_pred_income(self):
-        now_income = self.calc_income()
-        pred = now_income
-        if self.date_interval[1] < datetime.now():
-            return now_income
-        else:
-            # 直近の月給*残りの月を予測値に加える
-            for ctg in self.permanent_income_ctg:
-                last_payday = self.income_df.loc[(self.income_df["category"] == ctg) & (self.income_df["income_type"] == "月給")]["time"].max()
-                if len(self.income_df.loc[(self.income_df["time"] == last_payday) & (self.income_df["category"] == ctg)]["income"]) != 0:
-                    last_income = self.income_df.loc[(self.income_df["time"] == last_payday) & (self.income_df["category"] == ctg)]["income"].iloc[-1]
-                else:
-                    last_income = 0
 
-                this_month_payday = get_this_month_payday(
-                    payday=self.payday_dict[ctg],
-                    this_year = self.now_date.year,
-                    this_month = self.now_date.month
-                )
-                if self.now_date < this_month_payday: # 今月の給料はまだ
-                    pred += (self.month_left + 1) * last_income
-                else:
-                    pred += self.month_left * last_income
+class AccountingUntilNowKPI:
+    def __init__(self, income_data: pd.DataFrame):
+        """
+        コンストラクタ
 
-            # 直近一年間のボーナス平均も予測値に加える
-            for ctg in self.bonus_income_ctg:
-                last_date_interval = [
-                    self.now_date - relativedelta(years=1),
-                    self.now_date
-                ]
-                most_recent_1year_income_df = self.all_income_df.loc[
-                    (last_date_interval[0] <= self.all_income_df["time"]) &
-                    (self.all_income_df["time"] < last_date_interval[1]) &
-                    (self.all_income_df["category"] == ctg) &
-                    (self.all_income_df["income_type"] == "ボーナス")
-                ]
-                most_recent_1year_bonus_mean = np.mean(most_recent_1year_income_df["income"])
+        Parameters
+        ----------
+        buy_data : pd.DataFrame
+            支出データ
+        income_data : pd.DataFrame
+            収入データ
+        saving_data : pd.DataFrame
+            貯金データ
+        """
+        self._income_data = income_data
 
-                bonus_month_day_list = self.bonus_type_dict[ctg].split("_")
-                for bonus_month_day in bonus_month_day_list:
+    def calc_pred_income(self, accounting_interval: list[datetime], accounting_start_month: Literal[1, 4], bonus_days: list[str]):
+        now_date = self._income_data["time"].max()
+        now_income = int(self._income_data.loc[(accounting_interval[0] <= self._income_data["time"]) & (self._income_data["time"] <= now_date), "income"].sum())
+        left_month = (accounting_interval[1].year - now_date.year) * 12 + accounting_interval[1].month - now_date.month - 1
+
+        if left_month > 0:
+            self._income_data.loc[:, ["year"]] = self._income_data.loc[:, "time"].dt.year
+            self._income_data.loc[:, ["month"]] = self._income_data.loc[:, "time"].dt.month
+            # 直近の月給
+            if now_date.day < 25:
+                month_diff = 1
+            else:
+                month_diff = 0
+            latent_month_income = int(self._income_data.loc[
+                (self._income_data["year"] == now_date.year) &
+                (self._income_data["month"] == now_date.month-month_diff) &
+                (self._income_data["income_type"] == "月給")
+            , "income"].sum())
+            # 残りの累積月給
+            remaining_month_income = left_month * latent_month_income
+            # まだもらってないbonusの日付を見つける
+            if accounting_start_month == 1:
+                until_bonus_days = [datetime(year=now_date.year, month=int(bonus_day.split("-")[0]), day=int(bonus_day.split("-")[1])) for bonus_day in bonus_days]
+                remaining_bonus_days = [bonus_day for bonus_day in until_bonus_days if now_date < bonus_day]
+            elif accounting_start_month == 4:
+                until_bonus_days = []
+                for bonus_month_day in bonus_days:
                     bonus_month = int(bonus_month_day.split("-")[0])
                     bonus_day = int(bonus_month_day.split("-")[1])
-
-                    bonus_date = datetime(year=self.now_date.year, month=bonus_month, day=bonus_day, hour=0, minute=0, second=0, microsecond=0)
-                    if self.now_date < bonus_date: # bunus_dateはまだ来てない
-                        pred += most_recent_1year_bonus_mean
-
-            return pred
-
-    def calc_saving(self):
-        # 貯金額を計算
-        return np.sum(self.saving_df["amount"])
-
-
-def get_this_month_payday(payday, this_year, this_month):
-    """
-    入力されたpayday（給料日）から今月の給料日を計算し、datetime型で出力
-
-    Parameters
-    ----------
-    payday : _type_
-        _description_
-    this_year : _type_
-        _description_
-    this_month : _type_
-        _description_
-    """
-    this_month_payday = None
-    if payday == "末日":
-        this_month_first_date = datetime(year=this_year, month=this_month, day=1, hour=0, minute=0, second=0, microsecond=0)
-        next_month_first_date = this_month_first_date + relativedelta(months=1)
-        this_month_payday = next_month_first_date - relativedelta(days=1)
-    elif payday == "臨時":
-        this_month_payday = None
-    else:
-        this_month_payday = datetime(year=this_year, month=this_month, day=25, hour=0, minute=0, second=0, microsecond=0)
-
-    return this_month_payday
-
+                    if bonus_month < 4:
+                        until_bonus_days.append(datetime(year=now_date.year + 1, month=bonus_month_day, day=bonus_day))
+                    else:
+                        until_bonus_days.append(datetime(year=now_date.year, month=bonus_month, day=bonus_day))
+                    remaining_bonus_days = [bonus_day for bonus_day in until_bonus_days if (now_date < bonus_day) & (bonus_day < accounting_interval[1])]
+            # もらってないbonusの金額を去年の同じ日にいくらもらっていたかを見て概算する
+            if len(remaining_bonus_days) != 0:
+                latent_remaining_bonus_days = [bonus_day + relativedelta(years=-1) for bonus_day in remaining_bonus_days]
+                remaining_bonus_income = int(self._income_data.loc[self._income_data["time"].isin(latent_remaining_bonus_days), "income"].sum())
+            else:
+                remaining_bonus_income = 0
+            return now_income + remaining_month_income + remaining_bonus_income
+        else:
+            return now_income

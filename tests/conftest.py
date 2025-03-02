@@ -41,7 +41,7 @@ def shift_column_to_first_row(data: pd.DataFrame) -> pd.DataFrame:
 def mock_sheet(request):
     sheet_name = request.param
     sheet = Mock(spec=gspread.worksheet.Worksheet)
-    data = pd.read_excel("tests/data/household_account.xlsx", sheet_name=sheet_name)
+    data = pd.read_excel("tests/data/test_household_account.xlsx", sheet_name=sheet_name)
     # テスト用のデータは列が列としてDataFrame上で読み込まれるが、spreadsheetの方は列名が0, 1, ...となる。
     # spreadsheetに合わせるために、わざと列名を0, 1, 2...として、元の列名を一行目に挿入する。
     data = shift_column_to_first_row(data)
@@ -50,3 +50,13 @@ def mock_sheet(request):
     sheet.get_all_values.return_value = data
 
     return sheet
+
+@pytest.fixture
+def income_data():
+    excel_name = "test_household_account.xlsx"
+    income_data = pd.read_excel("tests/data/" + excel_name, sheet_name="収入データ")
+    income_data["time"] = pd.to_datetime(income_data["time"], format="%Y-%m-%d")
+
+    return income_data
+
+

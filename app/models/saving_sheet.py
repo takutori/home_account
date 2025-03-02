@@ -38,9 +38,16 @@ class SavingDataSheet(Sheet):
     def time_format(self):
         return self._time_format
 
-    def input_saving(self, date, ctg, how_to_save, amount):
-        # make inserted data
-        insert_data = [date, ctg, how_to_save, amount]
-        # insert data
-        index = len(self.sheet.get_all_values())
-        self.sheet.insert_row(insert_data, index + 1)
+    def input_saving(self, values):
+        """
+        貯金データを貯金シートに入力する
+
+        Parameters
+        ----------
+        values : _type_
+            追加するデータ。二次元のリスト。
+        """
+        self._sheet.append_rows(
+            values=values,
+            insert_data_option="INSERT_ROWS"
+        )

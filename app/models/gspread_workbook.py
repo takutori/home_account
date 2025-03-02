@@ -1,5 +1,5 @@
 from typing import Literal
-from abc import ABC, ABCMeta, abstractmethod
+from abc import ABCMeta
 
 import pandas as pd
 import gspread
