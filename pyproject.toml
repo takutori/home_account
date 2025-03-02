@@ -7,7 +7,7 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = ">=3.10,<3.14"
-plotly = "^6.0.0"
+plotly = "5.9.0"
 gspread = "^6.2.0"
 flask = "^3.1.0"
 pytest = "^8.3.4"
