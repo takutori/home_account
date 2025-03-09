@@ -44,7 +44,15 @@ class BuyByDate(CreatePlotly):
             (self._buy_data["time"] < interval[1])
         ]
 
-    def _get_buy_history(self):
+    def _get_buy_history(self) -> pd.Series:
+        """
+        累積の支出履歴を出力する
+
+        Returns
+        -------
+        pd.DataFrame
+            累積の支出履歴。indexに日時、valueに累積支出
+        """
         buy_history = self._buy_data.sort_values(by="time").groupby("time").sum()["amount"]
         # 最初日、最終日を追加して、グラフが最終日まで表示されるようにする
         interval = self._accounting_time.get_date_interval()
@@ -59,6 +67,14 @@ class BuyByDate(CreatePlotly):
         return buy_sum_history
 
     def _add_trace_plot(self, buy_sum_history):
+        """
+        累積支出のグラフを追加する
+
+        Parameters
+        ----------
+        buy_sum_history : _type_
+            累積支出の履歴
+        """
         trace = go.Scatter(
             x=buy_sum_history.index,
             y=buy_sum_history.values,
@@ -70,7 +86,14 @@ class BuyByDate(CreatePlotly):
         self._traces_data.append(trace_name="by_date_plot", trace=trace)
 
     def _add_trace_hline(self, buy_sum_history):
-        interval = self._accounting_time.get_date_interval()
+        """
+        可処分所得のhlineを追加
+
+        Parameters
+        ----------
+        buy_sum_history : _type_
+            累積支出の履歴
+        """
         trace = go.Scatter(
             x=buy_sum_history.index,
             y=[self._residual_income]*len(buy_sum_history),
@@ -81,14 +104,30 @@ class BuyByDate(CreatePlotly):
 
         self._traces_data.append(trace_name="residual_income_hline", trace=trace)
 
-    def traces(self):
+    def traces(self) -> str[go.Trace]:
+        """
+        全てのtraceのリストを出力する
+
+        Returns
+        -------
+        str[go.Trace]
+            全てのtraceのリスト
+        """
         buy_sum_history = self._get_buy_history()
         self._add_trace_plot(buy_sum_history=buy_sum_history)
         self._add_trace_hline(buy_sum_history=buy_sum_history)
 
         return self._traces_data.traces
 
-    def layout(self):
+    def layout(self) -> dict:
+        """
+        layoutを出力する
+
+        Returns
+        -------
+        dict
+            layout
+        """
         return go.Layout(
             title=dict(text="今月の日別の使用額　\n期間：" + self._accounting_time.get_date_interval_str() + "　\n残り日数：" + str(self._accounting_time.get_days_left())),
             hovermode="x"

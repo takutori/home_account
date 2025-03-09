@@ -91,6 +91,36 @@ def monthly_data():
 
     return data_dict, ctl_dict
 
+@pytest.fixture
+def monthly_data():
+    excel_name = "test_2024_2025_household_account.xlsx"
+    buy_data = pd.read_excel("tests/data/" + excel_name, sheet_name="支出データ")
+    buy_data["time"] = pd.to_datetime(buy_data["time"], format="%Y-%m-%d")
+
+    income_data = pd.read_excel("tests/data/" + excel_name, sheet_name="収入データ")
+    income_data["time"] = pd.to_datetime(income_data["time"], format="%Y-%m-%d")
+
+    saving_data = pd.read_excel("tests/data/" + excel_name, sheet_name="貯金データ")
+    saving_data["time"] = pd.to_datetime(saving_data["time"], format="%Y-%m-%d")
+
+    data_dict = {
+        "buy": buy_data,
+        "income": income_data,
+        "saving": saving_data,
+    }
+
+    income_ctl_data = pd.read_excel("tests/data/" + excel_name, sheet_name="収入カテゴリー")
+    buy_ctl_data = pd.read_excel("tests/data/" + excel_name, sheet_name="支出管理")
+    saving_ctl_data = pd.read_excel("tests/data/" + excel_name, sheet_name="貯金カテゴリー")
+
+    ctl_dict = {
+        "buy": buy_ctl_data,
+        "income": income_ctl_data,
+        "saving": saving_ctl_data
+    }
+
+    return data_dict, ctl_dict
+
 
 @pytest.fixture
 def mock_accounting_month_20250121():
