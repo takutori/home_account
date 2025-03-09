@@ -36,6 +36,10 @@ class AccountingTime(metaclass=ABCMeta):
     def get_days_left(self) -> int:
         raise NotImplementedError
 
+    def get_date_interval_str(self) -> str:
+        interval = self.get_date_interval()
+        return f"{interval[0].strftime(self.date_format)}_{interval[1].strftime(self.date_format)}"
+
 
 
 class AccountingMonth(AccountingTime):

@@ -7,7 +7,7 @@ from app.services.plot.buy_by_ctg import BuyByCtg
 
 
 
-class TestMonthAmountbyCtg:
+class TestBuyByCtg:
     def test_init(self, monthly_data):
         buy_data = monthly_data[0]["buy"]
         buy_ctl_data = monthly_data[1]["buy"]
@@ -35,7 +35,7 @@ class TestMonthAmountbyCtg:
             buy_data=buy_data,
             ).create()
 
-        fig.write_html("tests/out_plot/unit_plot/MonthAmountByCtg.html")
+        fig.write_html("tests/out_plot/unit_plot/TestBuyByCtg.html")
 
     def test_get_plot_data(self, monthly_data):
         buy_data = monthly_data[0]["buy"]
