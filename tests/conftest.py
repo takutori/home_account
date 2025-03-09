@@ -1,9 +1,10 @@
 import pandas as pd
-
+from datetime import datetime
 import pytest
 from unittest.mock import Mock
 import gspread
 from app import boot_app
+from app.services.accounting_time import AccountingMonth, AccountingYear
 
 @pytest.fixture
 def app():
@@ -60,3 +61,76 @@ def income_data():
     return income_data
 
 
+@pytest.fixture
+def monthly_data():
+    excel_name = "test_2024-12-25_2024-01-25_household_account.xlsx"
+    buy_data = pd.read_excel("tests/data/" + excel_name, sheet_name="支出データ")
+    buy_data["time"] = pd.to_datetime(buy_data["time"], format="%Y-%m-%d")
+
+    income_data = pd.read_excel("tests/data/" + excel_name, sheet_name="収入データ")
+    income_data["time"] = pd.to_datetime(income_data["time"], format="%Y-%m-%d")
+
+    saving_data = pd.read_excel("tests/data/" + excel_name, sheet_name="貯金データ")
+    saving_data["time"] = pd.to_datetime(saving_data["time"], format="%Y-%m-%d")
+
+    data_dict = {
+        "buy": buy_data,
+        "income": income_data,
+        "saving": saving_data,
+    }
+
+    income_ctl_data = pd.read_excel("tests/data/" + excel_name, sheet_name="収入カテゴリー")
+    buy_ctl_data = pd.read_excel("tests/data/" + excel_name, sheet_name="支出管理")
+    saving_ctl_data = pd.read_excel("tests/data/" + excel_name, sheet_name="貯金カテゴリー")
+
+    ctl_dict = {
+        "buy": buy_ctl_data,
+        "income": income_ctl_data,
+        "saving": saving_ctl_data
+    }
+
+    return data_dict, ctl_dict
+
+@pytest.fixture
+def monthly_data():
+    excel_name = "test_2024_2025_household_account.xlsx"
+    buy_data = pd.read_excel("tests/data/" + excel_name, sheet_name="支出データ")
+    buy_data["time"] = pd.to_datetime(buy_data["time"], format="%Y-%m-%d")
+
+    income_data = pd.read_excel("tests/data/" + excel_name, sheet_name="収入データ")
+    income_data["time"] = pd.to_datetime(income_data["time"], format="%Y-%m-%d")
+
+    saving_data = pd.read_excel("tests/data/" + excel_name, sheet_name="貯金データ")
+    saving_data["time"] = pd.to_datetime(saving_data["time"], format="%Y-%m-%d")
+
+    data_dict = {
+        "buy": buy_data,
+        "income": income_data,
+        "saving": saving_data,
+    }
+
+    income_ctl_data = pd.read_excel("tests/data/" + excel_name, sheet_name="収入カテゴリー")
+    buy_ctl_data = pd.read_excel("tests/data/" + excel_name, sheet_name="支出管理").iloc[:, :4]
+    saving_ctl_data = pd.read_excel("tests/data/" + excel_name, sheet_name="貯金カテゴリー")
+
+    ctl_dict = {
+        "buy": buy_ctl_data,
+        "income": income_ctl_data,
+        "saving": saving_ctl_data
+    }
+
+    return data_dict, ctl_dict
+
+
+@pytest.fixture
+def mock_accounting_month_20250121():
+    accounting_month = Mock(spec=AccountingMonth)
+    accounting_month.get_date_interval.return_value = [
+        datetime(year=2024, month=12, day=25),
+        datetime(year=2025, month=1, day=25)
+    ]
+
+    accounting_month.get_days_left.return_value = 4
+    accounting_month.get_last_day.return_day = datetime(year=2025, month=1, day=25)
+
+    return accounting_month

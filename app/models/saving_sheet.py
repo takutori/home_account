@@ -31,12 +31,11 @@ class SavingDataSheet(Sheet):
     """
     def __init__(self, sheet: gspread.worksheet.Worksheet):
         super().__init__(sheet=sheet)
-        self._time_format = "%Y-%m-%d"
-        self._data["time"] = pd.to_datetime(self._data["time"], format=self._time_format)
+        super().to_datetime("time")
 
     @property
     def time_format(self):
-        return self._time_format
+        return self._date_format
 
     def input_saving(self, values):
         """

@@ -79,12 +79,28 @@ class IncomeDataSheet(Sheet):
     """収入データシートを扱う"""
     def __init__(self, sheet: gspread.worksheet.Worksheet):
         super().__init__(sheet=sheet)
-        self._time_format = "%Y-%m-%d"
-        self._data["time"] = pd.to_datetime(self._data["time"], format=self._time_format)
+        super().to_datetime("time")
+        self._data = self._filter_column_num(data=self._data)
 
     @property
     def time_format(self):
-        return self._time_format
+        return self._date_format
+
+    def _filter_column_num(self, data: pd.DataFrame) -> pd.DataFrame:
+        """
+        列を左から5行目までにする
+
+        Parameters
+        ----------
+        data : pd.DataFrame
+            修正前のデータ
+
+        Returns
+        -------
+        pd.DataFrame
+            修正後のデータ
+        """
+        return data.iloc[:, 0:5]
 
     def input_income(self, values: list[list]):
         """
