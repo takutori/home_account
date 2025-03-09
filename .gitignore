@@ -5,4 +5,4 @@ __pycache__
 src/templates/reports/*
 *.command
 *.html
-tests/data/*
+*__pycache__

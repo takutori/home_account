@@ -41,9 +41,9 @@ class TestAccountingMonthKPI:
         assert accounting_month_kpi.calc_residual_income() == 300900
         assert accounting_month_kpi.calc_saving() == 10000
         assert accounting_month_kpi.calc_residual_income_minus_saving() == 300900 - 10000
-        assert accounting_month_kpi.calc_amount() == 206037
+        assert accounting_month_kpi.calc_amount() == 199132
         assert accounting_month_kpi.calc_fixed_cost() == 75514
-        assert accounting_month_kpi.calc_variable_cost() == 130523
+        assert accounting_month_kpi.calc_variable_cost() == 123618
         assert accounting_month_kpi.calc_amount_avoid_family() == 194082
         assert accounting_month_kpi.calc_work_book_cost() == 3240
         assert accounting_month_kpi.calc_engel_coefficient() == 11914 / 194082

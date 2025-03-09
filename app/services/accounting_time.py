@@ -33,7 +33,7 @@ class AccountingTime(metaclass=ABCMeta):
         raise NotImplementedError
 
     @abstractmethod
-    def get_days_left(self):
+    def get_days_left(self) -> int:
         raise NotImplementedError
 
 
@@ -74,7 +74,7 @@ class AccountingMonth(AccountingTime):
         date_interval = [start_date, finish_date]
         return date_interval
 
-    def get_days_left(self) -> datetime:
+    def get_days_left(self) -> int:
         """
         月の残りの日を数える
 
@@ -142,13 +142,13 @@ class AccountingYear(AccountingTime):
 
             return [start_date, finish_date]
 
-    def get_month_left(self):
+    def get_month_left(self) -> int:
         """
         今月を含まず、残り何ヶ月あるか計算
         """
         return (self.date_interval[1].year - self.now_date.year) * 12 + self.date_interval[1].month - self.now_date.month - 1
 
-    def get_days_left(self) -> datetime:
+    def get_days_left(self) -> int:
         """
         年の残りの日を数える
 

@@ -1,11 +1,13 @@
 from typing import Literal
-from abc import ABCMeta
+from abc import ABCMeta, abstractmethod
 
 import pandas as pd
 import gspread
 from google.oauth2.service_account import Credentials
 
 import json
+
+from app.services.accounting_time import AccountingTime
 
 
 class SpreadSheetConector:
@@ -75,6 +77,7 @@ class Sheet(metaclass = ABCMeta):
             google spread sheet
 
         """
+        self._date_format = "%Y-%m-%d"
         self._sheet = sheet
         self._sheet_name = self._sheet._properties["title"]
         # データの読み込み
@@ -112,3 +115,12 @@ class Sheet(metaclass = ABCMeta):
     def data(self) -> pd.DataFrame:
         return self._data
 
+    def to_datetime(self, column_name: str):
+        self._data[column_name] = pd.to_datetime(self._data[column_name], format=self._date_format)
+
+    def accounting_data(self, accounting_time: AccountingTime) -> pd.DataFrame:
+        if "time" in self._data.columns:
+            interval = accounting_time.get_date_interval()
+            return self._data.loc[(interval[0] <= self._data["time"]) & (self._data["time"] < interval[1])]
+        else:
+            raise KeyError("time列が存在しません。")

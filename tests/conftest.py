@@ -1,9 +1,10 @@
 import pandas as pd
-
+from datetime import datetime
 import pytest
 from unittest.mock import Mock
 import gspread
 from app import boot_app
+from app.services.accounting_time import AccountingMonth, AccountingYear
 
 @pytest.fixture
 def app():
@@ -91,3 +92,15 @@ def monthly_data():
     return data_dict, ctl_dict
 
 
+@pytest.fixture
+def mock_accounting_month_20250121():
+    accounting_month = Mock(spec=AccountingMonth)
+    accounting_month.get_date_interval.return_value = [
+        datetime(year=2024, month=12, day=25),
+        datetime(year=2025, month=1, day=25)
+    ]
+
+    accounting_month.get_days_left.return_value = 4
+    accounting_month.get_last_day.return_day = datetime(year=2025, month=1, day=25)
+
+    return accounting_month

@@ -1,33 +1,68 @@
 from typing import Literal
-import numpy as np
 import pandas as pd
-from datetime import datetime, timedelta
-
 import plotly.graph_objects as go
-import plotly.io as pio
 
 from app.services.plot.plot_interface import CreatePlotly
-from app.services.accounting_time import ThisTime
+from app.services.accounting_time import AccountingTime
 
 
 
-class MonthAmountByCtg(CreatePlotly):
+class BuyByCtg(CreatePlotly):
     def __init__(
         self,
-        account_interval: ThisTime,
+        accounting_time: AccountingTime,
         buy_ctl_data: pd.DataFrame,
         buy_data: pd.DataFrame,
         ):
-        super().__init__(account_interval=account_interval)
+        """
+        コンストラクタ
+
+        Parameters
+        ----------
+        accounting_time : AccountingTime
+            会計期間。グラフのデータ自体には適用されず、グラフのタイトルなどに使用される。
+        buy_ctl_data : pd.DataFrame
+            支出管理データ
+        buy_data : pd.DataFrame
+            支出データ
+        """
+        # buy_dataを受け取る際、全て受け取ってコンストラクタで会計期間に絞ることも考えたが、
+        # そうすると、他のクラスでも会計期間のに絞られているかの単体テストを実施する必要があるため、
+        # raisesチェックのみにした。
+        super().__init__(accounting_time=accounting_time)
         self._buy_ctl_data = buy_ctl_data
         self._buy_data = buy_data
         self._ctg_dict = self._buy_ctl_data.groupby("カテゴリー1", sort=False)["カテゴリー2"].apply(list).to_dict()
+        # time列がdatetime型に変換されているか確認
+        if type(self._buy_data.iloc[0]["time"]) != pd.Timestamp:
+            raise ValueError("time列がpd.Timestamp型になっていません")
+        # データを会計期間に絞る
+        interval = self._accounting_time.get_date_interval()
+        self._buy_data = self._buy_data.loc[
+            (interval[0] <= self._buy_data["time"]) &
+            (self._buy_data["time"] < interval[1])
+        ]
 
     def _get_plot_data(
         self,
         category_level: Literal[1, 2],
-        ctg1: str | None,
+        ctg1: str | None = None,
     ) -> pd.DataFrame:
+        """
+        カテゴリーレベルに合わせたデータを出力する。
+
+        Parameters
+        ----------
+        category_level : Literal[1, 2]
+            カテゴリーレベル
+        ctg1 : str | None
+            カテゴリーレベルが2の場合に、指定するカテゴリーレベル1の値
+
+        Returns
+        -------
+        pd.DataFrame
+            指定されたカテゴリーのデータ
+        """
         if category_level == 1:
             amount_data = self._buy_data[["category1", "amount"]].groupby("category1", sort=False, as_index=False).sum()
             ctl_data = self._buy_ctl_data[["カテゴリー1", "予算"]].groupby("カテゴリー1", sort=False, as_index=False).sum()
@@ -40,7 +75,22 @@ class MonthAmountByCtg(CreatePlotly):
 
         return ctg_amount_data
 
-    def _get_hoverlist(self, plot_data: pd.DataFrame, limit_or_buy: Literal["limit", "buy"]):
+    def _get_hoverlist(self, plot_data: pd.DataFrame, limit_or_buy: Literal["limit", "buy"]) -> list[str]:
+        """
+        plotlyに使用するホバーのリストを出力
+
+        Parameters
+        ----------
+        plot_data : pd.DataFrame
+            可視化するグラフのデータ
+        limit_or_buy : Literal[&quot;limit&quot;, &quot;buy&quot;]
+            予算グラフか支出グラフか
+
+        Returns
+        -------
+        list[str]
+            ホバーのリスト
+        """
         if limit_or_buy == "limit":
             hoverlist = [
                     f"予算: {limit}" for limit in plot_data["予算"]
@@ -52,15 +102,48 @@ class MonthAmountByCtg(CreatePlotly):
 
         return hoverlist
 
+    def _color_list(self, limit_or_buy: Literal["limit", "buy"]) -> str:
+        """
+        棒グラフの色を取得する
+
+        Parameters
+        ----------
+        limit_or_buy : Literal[&quot;limit&quot;, &quot;buy&quot;]
+            棒グラフの種類
+
+        Returns
+        -------
+        str
+            色
+        """
+        if limit_or_buy == "limit":
+            return "lightslategray"
+        elif limit_or_buy == "buy":
+            return "crimson"
+        else:
+            raise ValueError(f"{limit_or_buy}は指定できません。")
+
+
     def _add_trace_bar(
         self,
         category_level: Literal[1, 2],
         limit_or_buy: Literal["limit", "buy"],
         ctg1: str | None = None,
     ):
+        """
+        棒グラフのtraceを作成し、trace管理用クラスに保持させる
+
+        Parameters
+        ----------
+        category_level : Literal[1, 2]
+            カテゴリーレベル
+        limit_or_buy : Literal[&quot;limit&quot;, &quot;buy&quot;]
+            予算グラフか支出グラフか
+        ctg1 : str | None, optional
+            カテゴリーレベルが2の場合の、カテゴリーレベル1の値
+        """
 
         plot_data = self._get_plot_data(category_level=category_level, ctg1=ctg1)
-
         if limit_or_buy == "limit":
             color_list = ["lightslategray"]*len(plot_data)
         else:
@@ -115,7 +198,15 @@ class MonthAmountByCtg(CreatePlotly):
 
         self._traces_data.append(trace_name=trace_name, trace=trace)
 
-    def traces(self) -> list[go.Figure]:
+    def traces(self) -> list[go.Bar]:
+        """
+        カテゴリーレベル1でのtraceとカテゴリーレベル1の各カテゴリごとのtrceを全て作成する
+
+        Returns
+        -------
+        list[go.Figure]
+            traceのリスト
+        """
         # カテゴリー1のグラフ
         self._add_trace_bar(category_level=1, limit_or_buy="limit")
         self._add_trace_bar(category_level=1, limit_or_buy="buy")
@@ -127,39 +218,28 @@ class MonthAmountByCtg(CreatePlotly):
 
         return self._traces_data.traces
 
-    def layout(self):
+    def layout(self) -> go.Layout:
+        """
+        グラフの全体的なレイアウトを出力
+
+        Returns
+        -------
+        go.Layout
+            グラフのレイアウト
+        """
         limit_and_buy = self._get_limit_and_buy_by_ctg(category_level=1, ctg1=None)
         limit = format(limit_and_buy["limit"], ",")
         buy = format(limit_and_buy["buy"], ",")
         left_limit = format(limit_and_buy["limit"] - limit_and_buy["buy"], ",")
-        title = f"【カテゴリー1】 残り日数:{self._get_days_until_25th()} 予算合計:{limit} 出費合計:{buy} 残金:{left_limit}"
+        title = f"【カテゴリー1】 残り日数:{self._accounting_time.get_days_left()} 予算合計:{limit} 出費合計:{buy} 残金:{left_limit}"
 
         return go.Layout(
             title=dict(text=title),
             updatemenus=self._updatemenus(),
             barmode="overlay",
-            hovermode="x"
+            hovermode="x",
+            legend=dict(itemsizing="constant")
             )
-
-    def _get_days_until_25th(self):
-        today = datetime.now()
-        year = today.year
-        month = today.month
-
-        # 今月の25日の日付を生成
-        target_date = datetime(year, month, 25)
-
-        # 今日が25日以降なら、次の月の25日を目標日に設定
-        if today > target_date:
-            # 月が12月の場合、年を繰り上げる
-            if month == 12:
-                target_date = datetime(year+1, 1, 25)
-            else:
-                target_date = datetime(year, month+1, 25)
-
-        # 目標日までの残り日数を計算
-        delta = target_date - today
-        return delta.days
 
     def _get_limit_and_buy_by_ctg(self, category_level: Literal[1, 2], ctg1: str | None = None) -> dict[str, int]:
         """
@@ -184,7 +264,19 @@ class MonthAmountByCtg(CreatePlotly):
         }
 
 
-    def _buttons(self):
+    def _buttons(self) -> dict:
+        """
+        ボタンを作成。具体的には以下の項目を設定する
+
+        - "カテゴリー1"とカテゴリー1の値全てをボタンにする
+        - ボタンを押した時のグラフタイトルを設定する
+        - ボタンを押した時のグラフを設定する
+
+        Returns
+        -------
+        dict
+            ボタンの設定
+        """
         buttons = []
         button_names = ["カテゴリー1"] + [ctg1 for ctg1 in self._ctg_dict.keys()]
         for button_name in button_names:
@@ -202,7 +294,7 @@ class MonthAmountByCtg(CreatePlotly):
             limit = format(limit_and_buy["limit"], ",")
             buy = format(limit_and_buy["buy"], ",")
             left_limit = format(limit_and_buy["limit"] - limit_and_buy["buy"], ",")
-            button_title = f"【{button_name}】 残り日数:{self._account_interval.get_days_left()} 予算合計:{limit} 出費合計:{buy} 残金:{left_limit}"
+            button_title = f"【{button_name}】 残り日数:{self._accounting_time.get_days_left()} 予算合計:{limit} 出費合計:{buy} 残金:{left_limit}"
             button = dict(
                 label = button_name, method="update",
                 args=[
@@ -214,7 +306,15 @@ class MonthAmountByCtg(CreatePlotly):
 
         return buttons
 
-    def _updatemenus(self):
+    def _updatemenus(self) -> dict:
+        """
+        ボタンを押したときにアップデートする内容を設定する。
+
+        Returns
+        -------
+        dict
+            ボタンを押した時の挙動の設定
+        """
         return [
             dict(
                 type="buttons", direction="right",
