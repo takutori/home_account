@@ -4,7 +4,7 @@ from datetime import datetime
 import pandas as pd
 import plotly.graph_objects as go
 
-from app.services.accounting_interval import ThisTime
+from app.services.accounting_time import ThisTime
 from app.services.plot.trace_data_class import TracesData
 
 

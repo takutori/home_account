@@ -1,7 +1,7 @@
 import pytest
 from datetime import datetime
 
-from app.services.accounting_interval import ThisMonth
+from app.services.accounting_time import ThisMonth
 from app.services.plot.by_plotly import MonthAmountByCtg
 
 
