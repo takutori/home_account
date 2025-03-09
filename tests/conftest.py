@@ -110,7 +110,7 @@ def monthly_data():
     }
 
     income_ctl_data = pd.read_excel("tests/data/" + excel_name, sheet_name="収入カテゴリー")
-    buy_ctl_data = pd.read_excel("tests/data/" + excel_name, sheet_name="支出管理")
+    buy_ctl_data = pd.read_excel("tests/data/" + excel_name, sheet_name="支出管理").iloc[:, :4]
     saving_ctl_data = pd.read_excel("tests/data/" + excel_name, sheet_name="貯金カテゴリー")
 
     ctl_dict = {
