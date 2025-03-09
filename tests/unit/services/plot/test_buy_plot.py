@@ -1,5 +1,7 @@
 import pytest
 from datetime import datetime
+
+from app.services.accounting_interval import ThisMonth
 from app.services.plot.by_plotly import MonthAmountByCtg
 
 
@@ -10,13 +12,10 @@ class TestMonthAmountbyCtg:
         buy_data = monthly_data[0]["buy"]
         buy_ctl_data = monthly_data[1]["buy"]
 
-        accounting_interval = [
-            datetime(year=2024, month=12, day=25),
-            datetime(year=2025, month=1, day=25)
-            ]
+        this_month = ThisMonth(now_date="2025-01-21")
 
         fig = MonthAmountByCtg(
-            accounting_interval=accounting_interval,
+            account_interval=this_month,
             buy_ctl_data=buy_ctl_data,
             buy_data=buy_data,
             ).create()

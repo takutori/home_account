@@ -3,7 +3,7 @@ from typing import Literal
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 
-class ThisTime(metaclass=ABCMeta):
+class AccountingTime(metaclass=ABCMeta):
     def __init__(self, now_date: str | None=None):
         """
         now_dateは現在注目している日付。この注目している日付をもとに会計期間を計算する。
@@ -32,9 +32,13 @@ class ThisTime(metaclass=ABCMeta):
     def get_date_interval(self) -> list[datetime]:
         raise NotImplementedError
 
+    @abstractmethod
+    def get_days_left(self):
+        raise NotImplementedError
 
 
-class ThisMonth(ThisTime):
+
+class AccountingMonth(AccountingTime):
     def __init__(self, now_date=None):
         super().__init__(now_date=now_date)
 
@@ -93,12 +97,12 @@ class ThisMonth(ThisTime):
         """
         next_month_first_date = self._now_date + relativedelta(months=1)
         next_month_first_date = next_month_first_date.replace(day=1)
-        this_month_last_date = next_month_first_date + relativedelta(days=-1)
+        Accounting_month_last_date = next_month_first_date + relativedelta(days=-1)
 
-        return this_month_last_date
+        return Accounting_month_last_date
 
 
-class ThisYear(ThisTime):
+class AccountingYear(AccountingTime):
     def __init__(self, now_date=None, start_month: Literal[1, 4]=4):
         """
         初期化
@@ -143,3 +147,15 @@ class ThisYear(ThisTime):
         今月を含まず、残り何ヶ月あるか計算
         """
         return (self.date_interval[1].year - self.now_date.year) * 12 + self.date_interval[1].month - self.now_date.month - 1
+
+    def get_days_left(self) -> datetime:
+        """
+        年の残りの日を数える
+
+        Returns
+        -------
+        datetime
+            残りの日
+        """
+        date_interval = self.get_date_interval()
+        return (date_interval[1] - self._now_date).days

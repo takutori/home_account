@@ -7,13 +7,18 @@ import plotly.graph_objects as go
 import plotly.io as pio
 
 from app.services.plot.plot_interface import CreatePlotly
-
+from app.services.accounting_time import ThisTime
 
 
 
 class MonthAmountByCtg(CreatePlotly):
-    def __init__(self, buy_ctl_data: pd.DataFrame, buy_data: pd.DataFrame, accounting_interval: list[datetime]):
-        super().__init__(accounting_interval=accounting_interval)
+    def __init__(
+        self,
+        account_interval: ThisTime,
+        buy_ctl_data: pd.DataFrame,
+        buy_data: pd.DataFrame,
+        ):
+        super().__init__(account_interval=account_interval)
         self._buy_ctl_data = buy_ctl_data
         self._buy_data = buy_data
         self._ctg_dict = self._buy_ctl_data.groupby("カテゴリー1", sort=False)["カテゴリー2"].apply(list).to_dict()
@@ -197,7 +202,7 @@ class MonthAmountByCtg(CreatePlotly):
             limit = format(limit_and_buy["limit"], ",")
             buy = format(limit_and_buy["buy"], ",")
             left_limit = format(limit_and_buy["limit"] - limit_and_buy["buy"], ",")
-            button_title = f"【{button_name}】 残り日数:{self._get_days_until_25th()} 予算合計:{limit} 出費合計:{buy} 残金:{left_limit}"
+            button_title = f"【{button_name}】 残り日数:{self._account_interval.get_days_left()} 予算合計:{limit} 出費合計:{buy} 残金:{left_limit}"
             button = dict(
                 label = button_name, method="update",
                 args=[
