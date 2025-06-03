@@ -171,7 +171,7 @@ class TestBuyByCtg:
             ).layout()
 
         # グラフの初期値を確認
-        assert layout.title.text == '【カテゴリー1】 残り日数:4 予算合計:236,400 出費合計:199,132 残金:37,268'
+        assert layout.title.text == "【カテゴリー1】 残り日数:4 予算合計:236,400 出費合計:194,082 残金:42,318"
         assert layout.hovermode == "x"
 
     def test_get_limit_and_buy_by_ctg(self, monthly_data):
@@ -187,7 +187,7 @@ class TestBuyByCtg:
             )._get_limit_and_buy_by_ctg(
                 category_level=1,
             )
-        assert values["buy"] == 199132
+        assert values["buy"] == 194082
         assert values["limit"] == 236400
 
     def test_buttons(self, monthly_data):

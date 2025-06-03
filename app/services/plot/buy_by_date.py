@@ -104,13 +104,13 @@ class BuyByDate(CreatePlotly):
 
         self._traces_data.append(trace_name="residual_income_hline", trace=trace)
 
-    def traces(self) -> str[go.Trace]:
+    def traces(self) -> list[go.Trace]:
         """
         全てのtraceのリストを出力する
 
         Returns
         -------
-        str[go.Trace]
+        list[go.Trace]
             全てのtraceのリスト
         """
         buy_sum_history = self._get_buy_history()
