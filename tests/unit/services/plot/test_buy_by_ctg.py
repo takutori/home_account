@@ -5,10 +5,9 @@ from app.services.accounting_time import AccountingMonth
 from app.services.plot.buy_by_ctg import BuyByCtg
 
 
-
-
 class TestBuyByCtg:
     def test_init(self, monthly_data):
+        import pdb; pdb.set_trace()
         buy_data = monthly_data[0]["buy"]
         buy_ctl_data = monthly_data[1]["buy"]
         accounting_month = AccountingMonth(now_date="2025-01-21")

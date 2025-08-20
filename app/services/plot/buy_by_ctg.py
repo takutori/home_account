@@ -6,7 +6,6 @@ from app.services.plot.plot_interface import CreatePlotly
 from app.services.accounting_time import AccountingTime
 
 
-
 class BuyByCtg(CreatePlotly):
     def __init__(
         self,
